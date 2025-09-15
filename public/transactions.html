@@ -1,0 +1,140 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Transacciones — Finanzas</title>
+  <link rel="stylesheet" href="/css/styles.css"/>
+</head>
+<body>
+<header>
+  <div>💸 Finanzas — Transacciones</div>
+  <div class="nav">
+    <a href="/categories.html">Categorías</a>
+    <a href="/payment-methods.html">Métodos de pago</a>
+    <a href="/transactions.html">Transacciones</a>
+    <a href="/budgets.html">Presupuestos</a>
+    <a href="/reports.html">Reportes</a>
+    <button onclick="logout()">Salir</button>
+</div>
+</header>
+<div class="container">
+  <h1>Transacciones</h1>
+  <div class="grid">
+    <div class="card">
+      <h2>Nueva transacción</h2>
+      <label>Fecha</label>
+      <input type="date" id="txFecha" />
+      <label>Monto</label>
+      <input type="number" step="0.01" id="txMonto" />
+      <label>Descripción</label>
+      <input id="txDesc" />
+      <label>Categoría</label>
+      <select id="txCat"></select>
+      <label>Método de pago</label>
+      <select id="txPM"></select>
+      <br/>
+      <button class="primary" onclick="crear()">Registrar</button>
+      <div id="msg" class="toast"></div>
+    </div>
+    <div class="card">
+      <h2>Listado</h2>
+      <table id="tabla"><thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Método</th><th>Monto</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal edición TX -->
+<div id="txModalOv" class="modal-overlay">
+  <div class="modal">
+    <header>
+      <h2>Editar transacción</h2>
+      <button onclick="closeTx()">✖</button>
+    </header>
+    <div>
+      <label>Fecha</label>
+      <input type="date" id="txEditFecha" />
+      <label>Monto</label>
+      <input type="number" step="0.01" id="txEditMonto" />
+      <label>Descripción</label>
+      <input id="txEditDesc" />
+      <div id="txEditMsg" class="toast"></div>
+    </div>
+    <div class="actions">
+      <button class="secondary" onclick="closeTx()">Cancelar</button>
+      <button class="primary" onclick="guardarTx()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<footer>© Finanzas</footer>
+
+<script src="/js/ui.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script>
+  Auth.protect();
+  let txId = null;
+
+  async function cargarCats(){
+    const cats = await API.get('/api/categories');
+    txCat.innerHTML = cats.map(c=>`<option value="${c.id}">${c.nombre} (${c.global ? 'global' : c.tipo})</option>`).join('');
+  }
+  async function cargarPMs(){
+    const list = await API.get('/api/payment-methods');
+    txPM.innerHTML = list.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+  }
+  async function cargar(){
+    const txs = await API.get('/api/transactions');
+    const tbody = document.querySelector('#tabla tbody');
+    tbody.innerHTML = txs.map(t=>`
+      <tr>
+        <td>${t.fecha}</td>
+        <td>${t.descripcion || ''}</td>
+        <td><span class="badge">${t.category?.nombre || ''}</span>${t.category?.global ? ' ⭐' : ''}</td>
+        <td>${t.paymentMethod?.nombre || ''}</td>
+        <td>S/ ${Number(t.monto).toFixed(2)}</td>
+        <td>
+          <button class="secondary" onclick='openTx({id:${t.id}, fecha:"${t.fecha}", monto:${Number(t.monto)}, descripcion:"${(t.descripcion||'').replace(/"/g,'&quot;')}"})'>Editar</button>
+          <button class="secondary" onclick="eliminar(${t.id})">Eliminar</button>
+        </td>
+      </tr>`).join('');
+  }
+  function openTx(tx){
+    txId = tx.id;
+    txEditFecha.value = tx.fecha;
+    txEditMonto.value = tx.monto;
+    txEditDesc.value = tx.descripcion;
+    txModalOv.style.display = 'flex';
+  }
+  function closeTx(){ txModalOv.style.display = 'none'; txId = null; }
+  async function guardarTx(){
+    if(!askConfirm('¿Seguro de editar esta transacción?')) return;
+    try{
+      await API.put(`/api/transactions/${txId}`, { fecha: txEditFecha.value, monto: Number(txEditMonto.value), descripcion: txEditDesc.value });
+      showMsg('txEditMsg','success','Se editó correctamente.');
+      setTimeout(()=>{ closeTx(); cargar(); }, 500);
+    }catch(e){ showMsg('txEditMsg','error', formatErr('editar la transacción', e)); }
+  }
+  async function crear(){
+    try{
+      const payload = { fecha: txFecha.value, monto: Number(txMonto.value), descripcion: txDesc.value, categoryId: Number(txCat.value), paymentMethodId: Number(txPM.value) };
+      await API.post('/api/transactions', payload);
+      showMsg('msg','success','Transacción registrada correctamente.');
+      await cargar();
+    }catch(e){ showMsg('msg','error', formatErr('registrar la transacción', e)); }
+  }
+  async function eliminar(id){
+    if(!askConfirm('¿Seguro de eliminar esta transacción?')) return;
+    try{
+      await API.del(`/api/transactions/${id}`);
+      showMsg('msg','success','Se eliminó correctamente.');
+      cargar();
+    }catch(e){ showMsg('msg','error', formatErr('eliminar la transacción', e)); }
+  }
+  function logout(){ Auth.logout(); window.location.href='/' }
+  cargarCats(); cargarPMs(); cargar();
+</script>
+</body>
+</html>

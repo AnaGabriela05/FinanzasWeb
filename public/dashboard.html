@@ -1,0 +1,66 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Panel — Finanzas</title>
+  <link rel="stylesheet" href="/css/styles.css"/>
+</head>
+<body>
+  <header>
+    <div>💸 Finanzas — Panel</div>
+    <div class="nav">
+    <a href="/categories.html">Categorías</a>
+    <a href="/payment-methods.html">Métodos de pago</a>
+    <a href="/transactions.html">Transacciones</a>
+    <a href="/budgets.html">Presupuestos</a>
+    <a href="/reports.html">Reportes</a>
+    <button onclick="logout()">Salir</button>
+</div>
+  </header>
+  <div class="container">
+    <h1>Hola, <span id="nombre"></span> (<span id="rol"></span>)</h1>
+    <p class="muted">Resumen rápido</p>
+    <div id="resumen" class="grid"></div>
+  </div>
+  <footer>© Finanzas</footer>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    Auth.protect();
+    const u = Auth.user() || {};
+    nombre.textContent = u.nombre || '';
+    rol.textContent = u.role || 'usuario';
+
+    async function cargar(){
+      const cats = await API.get('/api/categories');
+      const txs  = await API.get('/api/transactions');
+      const ingresos = txs.filter(t=>t.category?.tipo==='ingreso').reduce((a,b)=>a+Number(b.monto),0);
+      const gastos   = txs.filter(t=>t.category?.tipo==='gasto').reduce((a,b)=>a+Number(b.monto),0);
+      const saldo = ingresos - gastos;
+      resumen.innerHTML = `
+        <div class="card">
+          <h2>Ingresos</h2>
+          <div class="success"><strong>S/ ${ingresos.toFixed(2)}</strong></div>
+        </div>
+        <div class="card">
+          <h2>Gastos</h2>
+          <div class="error"><strong>S/ ${gastos.toFixed(2)}</strong></div>
+        </div>
+        <div class="card">
+          <h2>Saldo</h2>
+          <div><strong>S/ ${saldo.toFixed(2)}</strong></div>
+        </div>
+        <div class="card">
+          <h2>Categorías</h2>
+          <div><span class="badge">${cats.length}</span> visibles</div>
+        </div>
+      `;
+    }
+    function logout(){ Auth.logout(); window.location.href='/'; }
+    cargar();
+  </script>
+</body>
+</html>

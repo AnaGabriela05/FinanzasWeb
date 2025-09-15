@@ -1,0 +1,153 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Categorías — Finanzas</title>
+  <link rel="stylesheet" href="/css/styles.css"/>
+</head>
+<body>
+<header>
+  <div>💸 Finanzas — Categorías</div>
+  <div class="nav">
+    <a href="/categories.html">Categorías</a>
+    <a href="/payment-methods.html">Métodos de pago</a>
+    <a href="/transactions.html">Transacciones</a>
+    <a href="/budgets.html">Presupuestos</a>
+    <a href="/reports.html">Reportes</a>
+    <button onclick="logout()">Salir</button>
+</div>
+</header>
+<div class="container">
+  <h1>Categorías</h1>
+  <div class="grid">
+    <div class="card">
+      <h2>Nueva categoría</h2>
+      <label>Nombre</label>
+      <input id="catNombre" />
+      <label>Tipo</label>
+      <select id="catTipo">
+        <option value="gasto">Gasto</option>
+        <option value="ingreso">Ingreso</option>
+      </select>
+      <div id="globalBox" class="hidden">
+        <label><input type="checkbox" id="catGlobal" /> Marcar como global (visible para todos)</label>
+        <small class="muted">Solo administradores pueden crear globales</small>
+      </div>
+      <br/>
+      <button class="primary" onclick="crear()">Crear</button>
+      <div id="msg" class="toast"></div>
+    </div>
+    <div class="card">
+      <h2>Listado</h2>
+      <table id="tabla"><thead><tr><th>Nombre</th><th>Tipo</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal edición -->
+<div id="modalOv" class="modal-overlay">
+  <div class="modal">
+    <header>
+      <h2>Editar categoría</h2>
+      <button onclick="closeModal()">✖</button>
+    </header>
+    <div>
+      <label>Nombre</label>
+      <input id="editNombre" />
+      <label>Tipo</label>
+      <select id="editTipo">
+        <option value="gasto">Gasto</option>
+        <option value="ingreso">Ingreso</option>
+      </select>
+      <div id="editGlobalBox" class="hidden">
+        <label><input type="checkbox" id="editGlobal" /> Global</label>
+      </div>
+      <div id="editMsg" class="toast"></div>
+    </div>
+    <div class="actions">
+      <button class="secondary" onclick="closeModal()">Cancelar</button>
+      <button class="primary" onclick="guardarEdicion()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<footer>© Finanzas</footer>
+
+<script src="/js/ui.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script>
+  Auth.protect();
+  const isAdmin = (Auth.user()?.role === 'admin');
+  if(isAdmin) globalBox.classList.remove('hidden');
+
+  let currentId = null;
+  function openModal(cat){
+    currentId = cat.id;
+    editNombre.value = cat.nombre;
+    editTipo.value = cat.tipo;
+    if(isAdmin) editGlobalBox.classList.remove('hidden');
+    else editGlobalBox.classList.add('hidden');
+    editGlobal.checked = !!cat.global;
+    modalOv.style.display = 'flex';
+  }
+  function closeModal(){ modalOv.style.display = 'none'; currentId = null; }
+  async function guardarEdicion(){
+    if(!askConfirm('¿Seguro de editar esta categoría?')) return;
+    const payload = { nombre: editNombre.value.trim(), tipo: editTipo.value };
+    if(isAdmin) payload.global = editGlobal.checked;
+    try{
+      await API.put(`/api/categories/${currentId}`, payload);
+      showMsg('editMsg','success','Se editó correctamente.');
+      setTimeout(()=>{ closeModal(); cargar(); }, 500);
+    }catch(e){ showMsg('editMsg','error', formatErr('editar la categoría', e)); }
+  }
+
+  async function cargar(){
+    const cats = await API.get('/api/categories');
+    const tbody = document.querySelector('#tabla tbody');
+    tbody.innerHTML = cats.map(c => {
+      const personal = !c.global;
+      const canEdit = personal || isAdmin;
+      const canDel = personal || isAdmin;
+      return `
+      <tr>
+        <td>${c.nombre}</td>
+        <td><span class="badge">${c.tipo}</span></td>
+        <td>${c.global ? '<span class="badge">Global</span>' : 'Personal'}</td>
+        <td>
+          <button class="secondary" onclick='openModal({id:${c.id}, nombre:"${c.nombre.replace(/"/g,'&quot;')}", tipo:"${c.tipo}", global:${!!c.global}})' ${!canEdit?'disabled title="Sin permiso"':''}>Editar</button>
+          <button class="secondary" onclick="eliminar(${c.id})" ${!canDel?'disabled title="Sin permiso"':''}>Eliminar</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  async function crear(){
+    try{
+      const payload = { nombre: catNombre.value.trim(), tipo: catTipo.value };
+      if (isAdmin && catGlobal.checked) payload.global = true;
+      await API.post('/api/categories', payload);
+      showMsg('msg','success','Categoría registrada correctamente.');
+      catNombre.value='';
+      cargar();
+    }catch(e){
+      showMsg('msg','error', formatErr('registrar la categoría', e));
+    }
+  }
+  async function eliminar(id){
+    if(!askConfirm('¿Seguro de eliminar esta categoría?')) return;
+    try{
+      await API.del(`/api/categories/${id}`);
+      showMsg('msg','success','Se eliminó correctamente.');
+      cargar();
+    }catch(e){
+      showMsg('msg','error', formatErr('eliminar la categoría', e));
+    }
+  }
+  function logout(){ Auth.logout(); window.location.href='/' }
+  cargar();
+</script>
+</body>
+</html>

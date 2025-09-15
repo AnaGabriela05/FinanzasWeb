@@ -1,0 +1,32 @@
+
+:root{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+body{ margin:0; background:#ffffff; color:#222;}
+header{ background:#75d6ce;color:white;padding:16px; display:flex; justify-content:space-between; align-items:center;}
+header a, header button{ color:white; text-decoration:none; border:none; background:transparent; cursor:pointer; font-weight:600;}
+.container{ max-width:1100px; margin:24px auto; background:white; padding:24px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,.06);}
+h1,h2{ margin-top:0 }
+.grid{ display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+.card{ border:1px solid #e5e7eb; border-radius:12px; padding:16px;}
+input, select{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid #d1d5db; background:#fff;}
+label{ font-size:14px; color:#374151; margin-bottom:6px; display:block;}
+button.primary{ background:#0ea5e9; color:white; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:600;}
+button.secondary{ background:#64748b; color:white; padding:10px 14px; border-radius:10px; border:none; font-weight:600; cursor:pointer;}
+button.google{ display:flex; align-items:center; gap:8px; background:white; color:#111; border:1px solid #ddd; padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;}
+button.google img{ width:18px; height:18px; }
+table{ width:100%; border-collapse:collapse; }
+th, td{ padding:10px; border-bottom:1px solid #eee; text-align:left; }
+.nav{ display:flex; gap:12px; flex-wrap:wrap;}
+.badge{ padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px; }
+.success{ color:#047857 }
+.error{ color:#b91c1c }
+.hidden{ display:none }
+footer{ text-align:center; color:#6b7280; padding:16px; }
+small.muted{ color:#6b7280 }
+.toast{ margin-top:8px; padding:10px 12px; border-radius:10px; border:1px solid #e5e7eb; }
+.toast.success{ background:#ecfdf5; border-color:#a7f3d0; }
+.toast.error{ background:#fef2f2; border-color:#fecaca; }
+.modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:50;}
+.modal{ background:white; width:min(560px, 92vw); border-radius:14px; box-shadow:0 20px 40px rgba(0,0,0,.2); padding:16px; }
+.modal header{ background:transparent; color:#111; padding:0; display:flex; justify-content:space-between; align-items:center;}
+.modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px;}
+.toggle{ display:flex; align-items:center; gap:8px; }

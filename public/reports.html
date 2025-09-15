@@ -1,0 +1,124 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Reportes — Finanzas</title>
+  <link rel="stylesheet" href="/css/styles.css"/>
+</head>
+<body>
+<header>
+  <div>💸 Finanzas — Reportes</div>
+  <div class="nav">
+    <a href="/categories.html">Categorías</a>
+    <a href="/payment-methods.html">Métodos de pago</a>
+    <a href="/transactions.html">Transacciones</a>
+    <a href="/budgets.html">Presupuestos</a>
+    <a href="/reports.html">Reportes</a>
+    <button onclick="logout()">Salir</button>
+</div>
+</header>
+<div class="container">
+  <h1>Reportes de transacciones</h1>
+  <div class="grid">
+    <div class="card">
+      <h2>Filtros</h2>
+      <label>Desde</label>
+      <input type="date" id="fDesde"/>
+      <label>Hasta</label>
+      <input type="date" id="fHasta"/>
+      <label>Categoría</label>
+      <select id="fCat"><option value="">(Todas)</option></select>
+      <label>Método de pago</label>
+      <select id="fPM"><option value="">(Todos)</option></select>
+      <br/>
+      <div class="nav">
+        <button class="secondary" onclick="verResumen()">Ver resumen</button>
+        <button class="primary" onclick="descargar('xlsx')">Descargar Excel</button>
+        <button class="primary" onclick="descargar('pdf')">Descargar PDF</button>
+      </div>
+      <div id="msg" class="toast"></div>
+    </div>
+    <div class="card">
+      <h2>Resumen</h2>
+      <div id="resumen"></div>
+    </div>
+  </div>
+</div>
+<footer>© Finanzas</footer>
+
+<script src="/js/ui.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script>
+  Auth.protect();
+
+  function setDefaultDates(){
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    fDesde.value = start.toISOString().slice(0,10);
+    fHasta.value = now.toISOString().slice(0,10);
+  }
+
+  async function loadFilters(){
+    const cats = await API.get('/api/categories');
+    fCat.innerHTML = '<option value="">(Todas)</option>' + cats.map(c=>`<option value="${c.id}">${c.nombre}${c.global ? ' (global)' : ''}</option>`).join('');
+    const pm = await API.get('/api/payment-methods');
+    fPM.innerHTML = '<option value="">(Todos)</option>' + pm.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+  }
+
+  function buildQuery(){
+    const q = new URLSearchParams();
+    if(fDesde.value) q.append('from', fDesde.value);
+    if(fHasta.value) q.append('to', fHasta.value);
+    if(fCat.value) q.append('categoryId', fCat.value);
+    if(fPM.value) q.append('paymentMethodId', fPM.value);
+    return q.toString();
+  }
+
+  async function verResumen(){
+    try{
+      const qs = buildQuery();
+      const arr = await API.get('/api/transactions' + (qs? '?' + qs : ''));
+      const totalIn = arr.filter(t=>t.category?.tipo==='ingreso').reduce((a,b)=>a+Number(b.monto),0);
+      const totalOut= arr.filter(t=>t.category?.tipo==='gasto').reduce((a,b)=>a+Number(b.monto),0);
+      const saldo = totalIn - totalOut;
+      resumen.innerHTML = `
+        <p><strong>Total ingresos:</strong> S/ ${totalIn.toFixed(2)}</p>
+        <p><strong>Total gastos:</strong> S/ ${totalOut.toFixed(2)}</p>
+        <p><strong>Saldo:</strong> S/ ${saldo.toFixed(2)}</p>
+        <p><small>${arr.length} transacciones</small></p>
+      `;
+      showMsg('msg','success','Resumen actualizado.');
+    }catch(e){ showMsg('msg','error', formatErr('obtener el resumen', e)); }
+  }
+
+  async function descargar(format){
+    try{
+      const qs = buildQuery();
+      const url = '/api/reports/transactions/export' + (qs? '?' + qs + '&' : '?') + 'format=' + format;
+      const res = await fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + (Auth.token()||'') }
+      });
+      if(!res.ok){
+        const text = await res.text();
+        throw new Error(text || ('HTTP ' + res.status));
+      }
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      const fname = 'reporte_transacciones_' + (fDesde.value||'inicio') + '_' + (fHasta.value||'hoy') + '.' + format;
+      a.href = URL.createObjectURL(blob);
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showMsg('msg','success','Descarga iniciada.');
+    }catch(e){ showMsg('msg','error', formatErr('descargar el reporte', e)); }
+  }
+
+  function logout(){ Auth.logout(); window.location.href='/' }
+  setDefaultDates(); loadFilters(); verResumen();
+</script>
+</body>
+</html>

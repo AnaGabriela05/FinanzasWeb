@@ -1,0 +1,97 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Presupuestos — Finanzas</title>
+  <link rel="stylesheet" href="/css/styles.css"/>
+</head>
+<body>
+<header>
+  <div>💸 Finanzas — Presupuestos</div>
+  <div class="nav">
+    <a href="/categories.html">Categorías</a>
+    <a href="/payment-methods.html">Métodos de pago</a>
+    <a href="/transactions.html">Transacciones</a>
+    <a href="/budgets.html">Presupuestos</a>
+    <a href="/reports.html">Reportes</a>
+    <button onclick="logout()">Salir</button>
+</div>
+</header>
+<div class="container">
+  <h1>Presupuestos</h1>
+  <div class="grid">
+    <div class="card">
+      <h2>Asignar / Actualizar</h2>
+      <label>Categoría</label>
+      <select id="bCat"></select>
+      <label>Monto mensual</label>
+      <input id="bMonto" type="number" step="0.01"/>
+      <div class="grid" style="grid-template-columns:1fr 1fr;">
+        <div>
+          <label>Mes</label>
+          <input id="bMes" type="number" min="1" max="12"/>
+        </div>
+        <div>
+          <label>Año</label>
+          <input id="bAnio" type="number" min="2000" max="2100"/>
+        </div>
+      </div>
+      <br/>
+      <button class="primary" onclick="guardar()">Guardar</button>
+      <div id="msg" class="toast"></div>
+    </div>
+    <div class="card">
+      <h2>Listado</h2>
+      <div>
+        <label>Filtrar por mes/año</label>
+        <div class="grid" style="grid-template-columns:1fr 1fr;">
+          <input id="fMes" type="number" min="1" max="12"/>
+          <input id="fAnio" type="number" min="2000" max="2100"/>
+        </div>
+        <br/>
+        <button class="secondary" onclick="cargar()">Buscar</button>
+      </div>
+      <table id="tabla"><thead><tr><th>Categoría</th><th>Mes/Año</th><th>Monto</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</div>
+<footer>© Finanzas</footer>
+
+<script src="/js/ui.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script>
+  Auth.protect();
+
+  async function cargarCats(){
+    const cats = await API.get('/api/categories');
+    bCat.innerHTML = cats.map(c=>`<option value="${c.id}">${c.nombre}${c.global ? ' (global)' : ''}</option>`).join('');
+  }
+  async function cargar(){
+    const q = new URLSearchParams();
+    if(fMes.value) q.append('mes', fMes.value);
+    if(fAnio.value) q.append('anio', fAnio.value);
+    const budgets = await API.get('/api/budgets' + (q.toString()? '?' + q.toString() : ''));
+    const tbody = document.querySelector('#tabla tbody');
+    tbody.innerHTML = budgets.map(b=>`
+      <tr>
+        <td>${b.category?.nombre || ''}${b.category?.global ? ' (global)' : ''}</td>
+        <td>${b.mes}/${b.anio}</td>
+        <td>S/ ${Number(b.montoMensual).toFixed(2)}</td>
+      </tr>`).join('');
+  }
+  async function guardar(){
+    try{
+      const payload = { categoryId: Number(bCat.value), montoMensual: Number(bMonto.value), mes: Number(bMes.value), anio: Number(bAnio.value) };
+      const r = await API.post('/api/budgets', payload);
+      showMsg('msg','success', r.message || 'Presupuesto registrado correctamente.');
+      cargar();
+    }catch(e){ showMsg('msg','error', formatErr('guardar el presupuesto', e)); }
+  }
+  function logout(){ Auth.logout(); window.location.href='/' }
+  cargarCats(); cargar();
+</script>
+</body>
+</html>

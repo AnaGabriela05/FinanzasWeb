@@ -1,0 +1,118 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Métodos de pago — Finanzas</title>
+  <link rel="stylesheet" href="/css/styles.css"/>
+</head>
+<body>
+<header>
+  <div>💸 Finanzas — Métodos de pago</div>
+  <div class="nav">
+    <a href="/categories.html">Categorías</a>
+    <a href="/payment-methods.html">Métodos de pago</a>
+    <a href="/transactions.html">Transacciones</a>
+    <a href="/budgets.html">Presupuestos</a>
+    <a href="/reports.html">Reportes</a>
+    <button onclick="logout()">Salir</button>
+</div>
+</header>
+<div class="container">
+  <h1>Métodos de pago</h1>
+  <div class="grid">
+    <div class="card">
+      <h2>Nuevo método</h2>
+      <label>Nombre</label>
+      <input id="pmNombre" />
+      <br/>
+      <button class="primary" onclick="crear()">Crear</button>
+      <div id="msg" class="toast"></div>
+    </div>
+    <div class="card">
+      <h2>Listado</h2>
+      <table id="tabla"><thead><tr><th>Nombre</th><th>Activo</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal edición PM -->
+<div id="pmModalOv" class="modal-overlay">
+  <div class="modal">
+    <header>
+      <h2>Editar método de pago</h2>
+      <button onclick="closePm()">✖</button>
+    </header>
+    <div>
+      <label>Nombre</label>
+      <input id="pmEditNombre" />
+      <label class="toggle"><input type="checkbox" id="pmEditActivo"/> Activo</label>
+      <div id="pmEditMsg" class="toast"></div>
+    </div>
+    <div class="actions">
+      <button class="secondary" onclick="closePm()">Cancelar</button>
+      <button class="primary" onclick="guardarPm()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<footer>© Finanzas</footer>
+
+<script src="/js/ui.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script>
+  Auth.protect();
+  let pmId = null;
+
+  function openPm(p){
+    pmId = p.id;
+    pmEditNombre.value = p.nombre;
+    pmEditActivo.checked = !!p.activo;
+    pmModalOv.style.display = 'flex';
+  }
+  function closePm(){ pmModalOv.style.display = 'none'; pmId = null; }
+
+  async function cargar(){
+    const list = await API.get('/api/payment-methods');
+    const tbody = document.querySelector('#tabla tbody');
+    tbody.innerHTML = list.map(p=>`
+      <tr>
+        <td>${p.nombre}</td>
+        <td>${p.activo ? 'Sí' : 'No'}</td>
+        <td>
+          <button class="secondary" onclick='openPm({id:${p.id}, nombre:"${p.nombre.replace(/"/g,'&quot;')}", activo:${p.activo}})'>Editar</button>
+          <button class="secondary" onclick="eliminar(${p.id})">Eliminar</button>
+        </td>
+      </tr>`).join('');
+  }
+  async function crear(){
+    try{
+      await API.post('/api/payment-methods', { nombre: pmNombre.value.trim() });
+      showMsg('msg','success','Método registrado correctamente.');
+      pmNombre.value='';
+      cargar();
+    }catch(e){ showMsg('msg','error', formatErr('registrar el método', e)); }
+  }
+  async function guardarPm(){
+    if(!askConfirm('¿Seguro de editar este método?')) return;
+    try{
+      await API.put(`/api/payment-methods/${pmId}`, { nombre: pmEditNombre.value.trim(), activo: pmEditActivo.checked });
+      showMsg('pmEditMsg','success','Se editó correctamente.');
+      setTimeout(()=>{ closePm(); cargar(); }, 500);
+    }catch(e){ showMsg('pmEditMsg','error', formatErr('editar el método', e)); }
+  }
+  async function eliminar(id){
+    if(!askConfirm('¿Seguro de eliminar este método?')) return;
+    try{
+      await API.del(`/api/payment-methods/${id}`);
+      showMsg('msg','success','Se eliminó correctamente.');
+      cargar();
+    }catch(e){ showMsg('msg','error', formatErr('eliminar el método', e)); }
+  }
+  function logout(){ Auth.logout(); window.location.href='/' }
+  cargar();
+</script>
+</body>
+</html>

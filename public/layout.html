@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="head">
+
+
+<meta charset="UTF-8">
+<meta name="description" content="Padama Hotel">
+<meta name="keywords" content="padama, hotel, lima, peru">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<link rel="icon" th:href="@{/img/p.ico}">
+<title>Padama Hotel</title>
+
+
+<!--  <script src="https://unpkg.com/ionicons@7.1.2/dist/ionicons.js"></script>
+<script src="https://unpkg.com/ionicons@5.4.0/dist/ionicons.js"></script> -->
+<!-- Font Icons-->
+ <link
+    rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+<!-- Google Font -->
+<link
+	href="https://fonts.googleapis.com/css?family=Lora:400,700&display=swap"
+	rel="stylesheet">
+<link
+	href="https://fonts.googleapis.com/css?family=Cabin:400,500,600,700&display=swap"
+	rel="stylesheet">
+	
+<!-- Css Styles -->
+<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+<link rel="stylesheet" th:href="@{/css/elegant-icons.css}">
+<link rel="stylesheet" th:href="@{/css/flaticon.css}">
+<link rel="stylesheet" th:href="@{/css/owl.carousel.min.css}">
+<link rel="stylesheet" th:href="@{/css/nice-select.css}">
+<link rel="stylesheet" th:href="@{/css/jquery-ui.min.css}">
+<link rel="stylesheet" th:href="@{/css/magnific-popup.css}">
+<link rel="stylesheet" th:href="@{/css/slicknav.min.css}">
+<link rel="stylesheet" th:href="@{/css/style.css}">
+<link rel="stylesheet" th:href="@{/css/style2.css}">
+
+
+
+</head>
+
+<body>
+
+	<!-- Offcanvas Menu Section Begin -->
+	<div th:fragment="menuoff" class="offcanvas-menu-wrapper">
+		<div class="canvas-close">
+			<i class="icon_close"></i>
+		</div>
+		<div class="search-icon  search-switch">
+			<i class="icon_search"></i>
+		</div>
+		<div class="header-configure-area">
+			<div class="language-option">
+				<div class="">
+					<ul>
+						<li>
+							<form th:action="@{/logout}" method="post" class="bk-btn-warning">
+								<input type="submit" class="bk-btn" value="Cerrar Sesion" />
+							</form>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<a href="#" class="bk-btn">Reserva Ahora</a>
+		</div>
+		<nav class="mainmenu mobile-menu">
+			<ul>
+				<li class="active"><a th:href="@{/home}">Home</a></li>
+				<li><a th:href="@{/categoria_listar}">Habitaciones</a></li>
+				<li><a th:href="@{/sobre-nosotros}">Sobre Nosotros</a></li>
+				<li><a th:href="@{/galeria}">Galeria</a>
+				<li><a th:href="@{/contacto}">Contacto</a></li>
+
+
+			</ul>
+		</nav>
+		<div id="mobile-menu-wrap"></div>
+		<div class="top-social">
+			<a href="#"><i class="fa fa-facebook"></i></a> <a href="#"><i
+				class="fa fa-twitter"></i></a> <a href="#"><i
+				class="fa fa-tripadvisor"></i></a> <a href="#"><i
+				class="fa fa-instagram"></i></a>
+		</div>
+		<ul class="top-widget">
+			<li><i class="fa fa-phone"></i>+51 1 5752794</li>
+			<li><i class="fa fa-envelope"></i> padama@gmail.com</li>
+		</ul>
+	</div>
+	<!-- Offcanvas Menu Section End -->
+<!-- Offcanvas Menu Section Begin -->
+	<div th:fragment="menuoff-admin" class="offcanvas-menu-wrapper">
+		<div class="canvas-close">
+			<i class="icon_close"></i>
+		</div>
+		<div class="header-configure-area">
+			<div class="language-option">
+				<div class="">
+				<a th:inline="text"><i>[[${#httpServletRequest.remoteUser}]]</i></a><p></p>
+				<form th:action="@{/logout}" method="post" class="bk-btn-warning">
+				<input type="submit" class="bk-btn" value="Cerrar Sesion" />
+				</form>
+				</div>
+			</div>
+		</div>
+		<nav class="mainmenu mobile-menu">
+		<ul>
+			<li class="active"><a th:href="@{/admin}">Home</a></li>
+			<li><a th:href="@{/habitacion}">Categorias</a></li>
+			<li><a th:href="@{/listar_habitacion}">Habitaciones</a></li>
+			<li><a th:href="@{/listar_temporada}">Temporadas</a></li>
+			<li><a th:href="@{/listar_nivel}">Pisos</a></li>
+			<li><a th:href="@{/listar_servicio}">Servicios</a></li>
+			<li><a th:href="@{/usuarios}">Usuarios</a></li>
+			<li><a th:href="@{/listar_confirmar_reserva}">Registro de Ingreso</a></li>
+			<li><a th:href="@{/finalizar_hospedaje}">Registro de Salida</a></li>
+			<li><a href="#">For me</a>
+			<ul class="dropdown">
+			<li><a th:href="@{/categoria_listar}">Habitaciones</a></li>
+			<li><a th:href="@{/historial_usuario}">Mi Historial</a></li>
+			</ul>
+			</li>
+			</ul>
+		</nav>
+		<div id="mobile-menu-wrap"></div>
+		
+		<ul class="top-widget">
+			<li><i class="fa fa-phone"></i>+51 1 5752794</li>
+			<li><i class="fa fa-envelope"></i> padama@gmail.com</li>
+		</ul>
+	</div>
+	<!-- Offcanvas Menu Section End -->
+	<!-- Header Section Begin -->
+	
+
+<header th:fragment="header-admin" class="header-section">
+		<div class="top-nav">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-6">
+						<ul class="tn-left">
+							<li><i class="fa fa-phone"></i>+51 1 5752794</li>
+							<li><i class="fa fa-envelope"></i> padama@gmail.com</li>
+							
+						</ul>
+					</div>
+					<div class="col-lg-6">
+						<div class="tn-right">
+							<div class="top-social">
+								<a th:inline="text"><i>[[${#httpServletRequest.remoteUser}]]</i></a>
+								<a href="#"><i class="fa fa-facebook"></i></a> <a href="#"><i
+									class="fa fa-twitter"></i></a> <a href="#"><i
+									class="fa fa-tripadvisor"></i></a> <a href="#"><i
+									class="fa fa-instagram"></i></a>
+							</div>
+							<div class="language-option">
+								<form th:action="@{/logout}" method="post">
+									<input type="submit" value="Cerrar Sesion" class="bk-btn" />
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="menu-item">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-2">
+						<div class="logo">
+							<a href="#"> <img th:src="@{/img/logo.png}" alt="">
+							</a>
+						</div>
+					</div>
+					<div class="col-lg-10">
+						<div class="nav-menu">
+							<nav class="mainmenu">
+								<ul>
+									<li class="active"><a th:href="@{/home}">Home</a></li>
+									<li><a th:href="@{/habitacion}">Categorias</a></li>
+											<li><a th:href="@{/listar_habitacion}">Habitaciones</a></li>
+											<li><a th:href="@{/listar_temporada}">Temporadas</a></li>
+											<li><a th:href="@{/listar_nivel}">Pisos</a></li>
+											<li><a th:href="@{/listar_servicio}">Servicios</a></li>
+											
+									<li><a href="#">Gestion</a>
+										<ul class="dropdown">
+										<li><a th:href="@{/usuarios}">Usuarios</a></li>
+											<li><a th:href="@{/listar_confirmar_reserva}">Registro de Ingreso</a></li>
+											<li><a th:href="@{/finalizar_hospedaje}">Registro de Salida</a></li>
+											<li><a th:href="@{/categoria_listar}">Habitaciones</a></li>
+									<li><a th:href="@{/sobre-nosotros}">Sobre Nosotros</a></li>
+									<li><a th:href="@{/galeria}">Galeria</a></li>
+									<li><a th:href="@{/contacto}">Contacto</a></li>
+									<li><a th:href="@{/historial_usuario}">Mi Historial</a></li>
+										</ul>
+									</li>
+								</ul>
+							</nav>
+							<div class="nav-right search-switch">
+								<i class="icon_search"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</header>
+<header th:fragment="header-user" class="header-section">
+		<div class="top-nav">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-6">
+						<ul class="tn-left">
+							<li><i class="fa fa-phone"></i>+51 1 5752794</li>
+							<li><i class="fa fa-envelope"></i> padama@gmail.com</li>
+							
+						</ul>
+					</div>
+					<div class="col-lg-6">
+						<div class="tn-right">
+							<div class="top-social">
+								<a th:inline="text"><i>[[${#httpServletRequest.remoteUser}]]</i></a>
+								<a href="#"><i class="fa fa-facebook"></i></a> <a href="#"><i
+									class="fa fa-twitter"></i></a> <a href="#"><i
+									class="fa fa-tripadvisor"></i></a> <a href="#"><i
+									class="fa fa-instagram"></i></a>
+							</div>
+							<div class="language-option">
+								<form th:action="@{/logout}" method="post">
+									<input class="bk-btn" type="submit" value="Cerrar Sesion" />
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="menu-item">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-2">
+						<div class="logo">
+							<a href="#"> <img th:src="@{/img/logo.png}" alt="">
+							</a>
+						</div>
+					</div>
+					<div class="col-lg-10">
+						<div class="nav-menu">
+							<nav class="mainmenu">
+								<ul>
+									<li class="active"><a th:href="@{/home}">Home</a></li>
+									<li><a th:href="@{/categoria_listar}">Habitaciones</a></li>
+									<li><a th:href="@{/sobre-nosotros}">Sobre Nosotros</a></li>
+									<li><a th:href="@{/galeria}">Galeria</a></li>
+									<li><a th:href="@{/contacto}">Contacto</a></li>
+									<li><a th:href="@{/historial_usuario}">Mi Historial</a></li>
+									
+								</ul>
+							</nav>
+							<div class="nav-right search-switch">
+								<i class="icon_search"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<!-- Footer Section Begin -->
+	<footer th:fragment="footer" class="footer-section">
+		<div class="container">
+			<div class="footer-text">
+				<div class="row">
+					<div class="col-lg-4">
+						<div class="ft-about">							
+		<div class="copyright-option">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-7">
+					</div>
+					<div class="col-lg-5">
+						<div class="co-text">
+								Copyright &copy;
+								<script>
+									document.write(new Date().getFullYear());
+								</script>
+								All rights reserved <i class="fa fa-heart" aria-hidden="true"></i>
+								by Finanzas <!-- <a href="#" target="_blank">Padama</a> -->
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</footer>
+	<!-- Footer Section End -->
+
+	<!-- Search model Begin -->
+	<div th:fragment="search" class="search-model">
+		<div class="h-100 d-flex align-items-center justify-content-center">
+			<div class="search-close-switch">
+				<i class="icon_close"></i>
+			</div>
+			<form class="search-model-form">
+				<input type="text" id="search-input" placeholder="Busca aquí...">
+			</form>
+		</div>
+	</div>
+	<!-- Search model end -->
+
+</body>
+</html>
