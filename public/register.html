@@ -24,12 +24,20 @@
         <input type="password" id="regPassword" minlength="6" required />
         <br/>
         <button class="primary" type="submit">Registrarme</button>
-        <p><small>¿Ya tienes cuenta? <a href="/">Inicia sesión</a></small></p>
+        <p><small>¿Ya tienes cuenta? <a style="color: rgb(0, 81, 255);"href="/">Inicia sesión</a></small></p>
         <div id="regMsg" class="toast"></div>
       </form>
     </div>
   </div>
-  <footer>© Finanzas</footer>
+ <!-- <footer>
+   Copyright &copy;
+      <script>
+        document.write(new Date().getFullYear());
+      </script>
+      <br />
+      Todos los derechos reservados
+      <i class="fa fa-heart" aria-hidden="true"></i>
+  </footer>-->
   <script src="/js/ui.js"></script>
 <script src="/js/auth.js"></script>  <!-- <- agrega esta línea -->
 <script src="/js/api.js"></script>
@@ -41,7 +49,7 @@
       await API.post('/api/auth/register', payload);
       showMsg('regMsg','success','Usuario registrado correctamente. Ahora inicia sesión.');
       // Opcional: redirigir después de 1s
-      // setTimeout(()=> window.location.href = "/", 1000);
+      //setTimeout(()=> window.location.href = "/", 1000);
     } catch (err) {
       showMsg('regMsg','error', formatErr('registrar', err));
     }

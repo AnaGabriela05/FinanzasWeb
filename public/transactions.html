@@ -9,7 +9,7 @@
 </head>
 <body>
 <header>
-  <div>💸 Finanzas — Transacciones</div>
+  <div><a href="/dashboard.html">💸 Finanzas — Transacciones</a></div>
   <div class="nav">
     <a href="/categories.html">Categorías</a>
     <a href="/payment-methods.html">Métodos de pago</a>
@@ -40,7 +40,20 @@
     </div>
     <div class="card">
       <h2>Listado</h2>
-      <table id="tabla"><thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Método</th><th>Monto</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+      <table id="tabla"><thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Categoría</th>
+          <th>Método</th>
+          <th>Monto</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+
+      </tbody>
+    </table>
     </div>
   </div>
 </div>
@@ -68,7 +81,15 @@
   </div>
 </div>
 
-<footer>© Finanzas</footer>
+ <!-- <footer>
+   Copyright &copy;
+      <script>
+        document.write(new Date().getFullYear());
+      </script>
+      <br />
+      Todos los derechos reservados
+      <i class="fa fa-heart" aria-hidden="true"></i>
+  </footer>-->
 
 <script src="/js/ui.js"></script>
 <script src="/js/auth.js"></script>
@@ -97,6 +118,7 @@
         <td>S/ ${Number(t.monto).toFixed(2)}</td>
         <td>
           <button class="secondary" onclick='openTx({id:${t.id}, fecha:"${t.fecha}", monto:${Number(t.monto)}, descripcion:"${(t.descripcion||'').replace(/"/g,'&quot;')}"})'>Editar</button>
+          
           <button class="secondary" onclick="eliminar(${t.id})">Eliminar</button>
         </td>
       </tr>`).join('');

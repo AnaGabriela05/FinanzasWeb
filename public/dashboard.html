@@ -1,14 +1,54 @@
-
 <!doctype html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Panel — Finanzas</title>
-  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
+
 <body>
-  <header>
+  <!--<header class="header" id="header">
+    <nav class="nav container">
+      <a href="#" class="nav__logo">💸 Finanzas — Panel</a>
+      <div class="nav__menu" id="nav-menu">
+        <ul class="nav__list grid">
+          <li class="nav__item">
+            <a href="/categories.html" class="nav__link">
+              <i class="uil uil-estate nav__icon"></i>Categorías
+          </a>
+        </li>
+        <li class="nav__item">
+            <a href="/payment-methods.html" class="nav__link">
+              <i class="uil uil-estate nav__icon"></i>Métodos de pago
+          </a>
+        </li>
+        <li class="nav__item">
+            <a href="/transactions.html" class="nav__link">
+              <i class="uil uil-estate nav__icon"></i>Transacciones
+          </a>
+        </li>
+        <li class="nav__item">
+            <a href="/budgets.html" class="nav__link">
+              <i class="uil uil-estate nav__icon"></i>Presupuestos
+          </a>
+        </li>
+        <li class="nav__item">
+            <a href="/reports.html" class="nav__link">
+              <i class="uil uil-estate nav__icon"></i>Reportes
+          </a>        
+        </li>
+          <li class="nav__item">
+           <button onclick="logout()">Salir</button>
+          </a>
+        </li>
+        </ul>
+        <i class="uil uil-times nav__close" id="nav-close"></i>
+      </div>
+    </nav>
+  </header>-->
+<header>
     <div>💸 Finanzas — Panel</div>
     <div class="nav">
     <a href="/categories.html">Categorías</a>
@@ -17,14 +57,25 @@
     <a href="/budgets.html">Presupuestos</a>
     <a href="/reports.html">Reportes</a>
     <button onclick="logout()">Salir</button>
-</div>
-  </header>
-  <div class="container">
-    <h1>Hola, <span id="nombre"></span> (<span id="rol"></span>)</h1>
+  </div>
+</header>
+
+<div class="container">
+    <h1>Hola, <span id="nombre"></span>
+    </h1>
     <p class="muted">Resumen rápido</p>
     <div id="resumen" class="grid"></div>
   </div>
-  <footer>© Finanzas</footer>
+
+ <!-- <footer>
+   Copyright &copy;
+      <script>
+        document.write(new Date().getFullYear());
+      </script>
+      <br />
+      Todos los derechos reservados
+      <i class="fa fa-heart" aria-hidden="true"></i>
+  </footer>-->
 
   <script src="/js/auth.js"></script>
   <script src="/js/api.js"></script>
@@ -32,13 +83,13 @@
     Auth.protect();
     const u = Auth.user() || {};
     nombre.textContent = u.nombre || '';
-    rol.textContent = u.role || 'usuario';
+    rol = u.role || 'usuario';
 
-    async function cargar(){
+    async function cargar() {
       const cats = await API.get('/api/categories');
-      const txs  = await API.get('/api/transactions');
-      const ingresos = txs.filter(t=>t.category?.tipo==='ingreso').reduce((a,b)=>a+Number(b.monto),0);
-      const gastos   = txs.filter(t=>t.category?.tipo==='gasto').reduce((a,b)=>a+Number(b.monto),0);
+      const txs = await API.get('/api/transactions');
+      const ingresos = txs.filter(t => t.category?.tipo === 'ingreso').reduce((a, b) => a + Number(b.monto), 0);
+      const gastos = txs.filter(t => t.category?.tipo === 'gasto').reduce((a, b) => a + Number(b.monto), 0);
       const saldo = ingresos - gastos;
       resumen.innerHTML = `
         <div class="card">
@@ -59,7 +110,7 @@
         </div>
       `;
     }
-    function logout(){ Auth.logout(); window.location.href='/'; }
+    function logout() { Auth.logout(); window.location.href = '/'; }
     cargar();
   </script>
 </body>
