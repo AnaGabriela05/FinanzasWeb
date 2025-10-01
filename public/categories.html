@@ -41,7 +41,15 @@
     </div>
     <div class="card">
       <h2>Listado</h2>
-      <table id="tabla"><thead><tr><th>Nombre</th><th>Tipo</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+      <table id="tabla"><thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Tipo</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
     </div>
   </div>
 </div>
@@ -88,64 +96,113 @@
 <script src="/js/api.js"></script>
 <script>
   Auth.protect();
-  const isAdmin = (Auth.user()?.role === 'admin');
-  if(isAdmin) globalBox.classList.remove('hidden');
+let currentId = null;
+  let CAT_MAP = new Map();
 
-  let currentId = null;
+  function toggleGlobalBox() {
+    const userIsAdmin = (Auth.user()?.role === 'admin');
+    if (userIsAdmin) globalBox.classList.remove('hidden');
+    else globalBox.classList.add('hidden');
+    return userIsAdmin;
+  }
+  toggleGlobalBox();
+
   function openModal(cat){
     currentId = cat.id;
     editNombre.value = cat.nombre;
-    editTipo.value = cat.tipo;
-    if(isAdmin) editGlobalBox.classList.remove('hidden');
+    editTipo.value   = cat.tipo;
+
+    const userIsAdmin = (Auth.user()?.role === 'admin');
+    // en el modal no mostramos el checkbox Global a no-admin
+    if (userIsAdmin) editGlobalBox.classList.remove('hidden');
     else editGlobalBox.classList.add('hidden');
-    editGlobal.checked = !!cat.global;
+
+    editGlobal.checked = !!cat.global; // solo visible a admin
     modalOv.style.display = 'flex';
   }
-  function closeModal(){ modalOv.style.display = 'none'; currentId = null; }
+
+  function closeModal(){
+    modalOv.style.display = 'none';
+    currentId = null;
+  }
+
   async function guardarEdicion(){
     if(!askConfirm('¿Seguro de editar esta categoría?')) return;
-    const payload = { nombre: editNombre.value.trim(), tipo: editTipo.value };
-    if(isAdmin) payload.global = editGlobal.checked;
+
+    const payload = {
+      nombre: editNombre.value.trim(),
+      tipo:   editTipo.value
+    };
+    const userIsAdmin = (Auth.user()?.role === 'admin');
+    if (userIsAdmin) payload.global = editGlobal.checked;
+
     try{
-      await API.put(`/api/categories/${currentId}`, payload);
-      showMsg('editMsg','success','Se editó correctamente.');
-      setTimeout(()=>{ closeModal(); cargar(); }, 500);
-    }catch(e){ showMsg('editMsg','error', formatErr('editar la categoría', e)); }
+      const resp = await API.put(`/api/categories/${currentId}`, payload);
+
+      // Mensaje según comportamiento:
+      // - personalized: se creó versión personal y se ocultó la global para este usuario
+      // - updated: edición real
+      const msg = resp?.personalized
+        ? 'Se creó tu versión personal con los cambios.'
+        : 'Se editó correctamente.';
+      showMsg('editMsg','success', msg);
+
+      setTimeout(()=>{ closeModal(); cargar(); }, 400);
+    }catch(e){
+      showMsg('editMsg','error', formatErr('editar la categoría', e));
+    }
   }
 
   async function cargar(){
+    const userIsAdmin = toggleGlobalBox();
+
     const cats = await API.get('/api/categories');
+    CAT_MAP = new Map(cats.map(c => [c.id, c]));
+
     const tbody = document.querySelector('#tabla tbody');
     tbody.innerHTML = cats.map(c => {
-      const personal = !c.global;
-      const canEdit = personal || isAdmin;
-      const canDel = personal || isAdmin;
+      const canEdit   = true;  // ahora siempre puedes abrir el modal (backend decide)
+      const canAction = true;  // siempre muestra "Eliminar"
+
       return `
-      <tr>
-        <td>${c.nombre}</td>
-        <td><span class="badge">${c.tipo}</span></td>
-        <td>${c.global ? '<span class="badge">Global</span>' : 'Personal'}</td>
-        <td>
-          <button class="secondary" onclick='openModal({id:${c.id}, nombre:"${c.nombre.replace(/"/g,'&quot;')}", tipo:"${c.tipo}", global:${!!c.global}})' ${!canEdit?'disabled title="Sin permiso"':''}>Editar</button>
-          <button class="secondary" onclick="eliminar(${c.id})" ${!canDel?'disabled title="Sin permiso"':''}>Eliminar</button>
-        </td>
-      </tr>`;
+        <tr>
+          <td>${c.nombre}</td>
+          <td><span class="badge">${c.tipo}</span></td>
+          <td>
+            <button class="secondary"
+                    onclick='openModal({id:${c.id}, nombre:"${(c.nombre||'').replace(/"/g,'&quot;')}", tipo:"${c.tipo}", global:${!!c.global}})'
+                    ${!canEdit?'disabled title="Sin permiso"':''}>Editar</button>
+
+            <button class="secondary"
+                    onclick="eliminar(${c.id})"
+                    ${!canAction?'disabled title="Sin permiso"':''}>Eliminar</button>
+          </td>
+        </tr>`;
     }).join('');
   }
+
   async function crear(){
     try{
       const payload = { nombre: catNombre.value.trim(), tipo: catTipo.value };
-      if (isAdmin && catGlobal.checked) payload.global = true;
+      const userIsAdmin = (Auth.user()?.role === 'admin');
+      if (userIsAdmin && catGlobal.checked) payload.global = true;
+
       await API.post('/api/categories', payload);
       showMsg('msg','success','Categoría registrada correctamente.');
-      catNombre.value='';
+      catNombre.value = '';
+      catGlobal.checked = false;
       cargar();
     }catch(e){
       showMsg('msg','error', formatErr('registrar la categoría', e));
     }
   }
+
   async function eliminar(id){
-    if(!askConfirm('¿Seguro de eliminar esta categoría?')) return;
+    const cat = CAT_MAP.get(id);
+    if (!cat) { await cargar(); return; }
+
+    if (!askConfirm('¿Seguro de eliminar esta categoría?')) return;
+
     try{
       await API.del(`/api/categories/${id}`);
       showMsg('msg','success','Se eliminó correctamente.');
@@ -154,8 +211,14 @@
       showMsg('msg','error', formatErr('eliminar la categoría', e));
     }
   }
-  function logout(){ Auth.logout(); window.location.href='/' }
+
+  function logout(){
+    Auth.logout();
+    window.location.href = '/';
+  }
+
   cargar();
 </script>
+
 </body>
 </html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Lección — Finanzas</title>
+  <link rel="stylesheet" href="/css/styles.css"/>
+</head>
+<body>
+<header>
+  <div>💸 Finanzas — Lección</div>
+  <div class="nav">
+    <a href="/dashboard.html">Panel</a>
+    <a href="/learning.html" class="active-link">Aprendizaje</a>
+    <button onclick="logout()">Salir</button>
+  </div>
+</header>
+
+<div class="container">
+  <a href="/learning.html" class="button button--link">← Volver</a>
+  <h1 id="titulo"></h1>
+  <div id="contenido"></div>
+  <div id="videoBox"></div>
+
+  <h2 style="margin-top:16px;">Quiz</h2>
+  <div id="quizBox" class="card">
+    <button class="primary" id="btnCargar">Cargar preguntas</button>
+    <form id="formQuiz" class="hidden"></form>
+    <div id="msg" class="toast"></div>
+  </div>
+</div>
+
+<footer>© Finanzas</footer>
+
+<script src="/js/ui.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script>
+  Auth.protect();
+  const id = new URLSearchParams(location.search).get('id');
+
+  async function loadLesson(){
+    const l = await API.get('/api/learning/lesson/' + id);
+    titulo.textContent = l.titulo;
+    contenido.innerHTML = l.contenido;
+    if(l.videoUrl){
+      videoBox.innerHTML = `<div class="card"><iframe width="100%" height="360" src="${l.videoUrl}" frameborder="0" allowfullscreen></iframe></div>`;
+    }
+  }
+
+  async function loadQuiz(){
+    try{
+      const qs = await API.get(`/api/learning/lesson/${id}/quiz`);
+      if(!qs.length){ showMsg('msg','error','Esta lección no tiene preguntas.'); return; }
+      formQuiz.innerHTML = qs.map((q,i)=>`
+        <div style="margin-bottom:12px;">
+          <strong>${i+1}. ${q.enunciado}</strong>
+          ${q.opciones.map((op,j)=>`
+            <label style="display:block;margin-top:6px;">
+              <input type="radio" name="q${i}" value="${j}" required /> ${op}
+            </label>
+          `).join('')}
+        </div>
+      `).join('') + `<button class="primary" type="submit">Enviar</button>`;
+      formQuiz.classList.remove('hidden');
+      btnCargar.classList.add('hidden');
+    }catch(e){ showMsg('msg','error', formatErr('cargar el quiz', e)); }
+  }
+
+  async function submitQuiz(e){
+    e.preventDefault();
+    const answers = [];
+    const groups = Array.from(formQuiz.querySelectorAll('input[type=radio]')).reduce((m,i)=>{
+      (m[i.name]=m[i.name]||[]).push(i); return m;
+    },{});
+    Object.keys(groups).sort().forEach(k=>{
+      const sel = groups[k].find(i=>i.checked);
+      answers.push(sel ? Number(sel.value) : -1);
+    });
+
+    try{
+      const r = await API.post(`/api/learning/lesson/${id}/quiz`, { answers });
+      if(r.aprobado){
+        showMsg('msg','success', `¡Aprobado con ${r.puntaje}% (${r.correctas}/${r.total})!`);
+      }else{
+        showMsg('msg','error', `Intento registrado: ${r.puntaje}% (${r.correctas}/${r.total}). Necesitas 70% para aprobar.`);
+      }
+    }catch(e){ showMsg('msg','error', formatErr('enviar el quiz', e)); }
+  }
+
+  btnCargar.addEventListener('click', loadQuiz);
+  formQuiz.addEventListener('submit', submitQuiz);
+  function logout(){ Auth.logout(); location.href='/'; }
+
+  loadLesson();
+</script>
+</body>
+</html>

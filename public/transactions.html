@@ -97,15 +97,24 @@
 <script>
   Auth.protect();
   let txId = null;
-
+ function setDefaultDates(){
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    txFecha.value = start.toISOString().slice(0,10);
+  }
   async function cargarCats(){
     const cats = await API.get('/api/categories');
-    txCat.innerHTML = cats.map(c=>`<option value="${c.id}">${c.nombre} (${c.global ? 'global' : c.tipo})</option>`).join('');
+    //  Antes: (${c.global ? 'global' : c.tipo})
+    txCat.innerHTML = cats
+      .map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`)
+      .join('');
   }
+
   async function cargarPMs(){
     const list = await API.get('/api/payment-methods');
     txPM.innerHTML = list.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
   }
+
   async function cargar(){
     const txs = await API.get('/api/transactions');
     const tbody = document.querySelector('#tabla tbody');
@@ -113,16 +122,23 @@
       <tr>
         <td>${t.fecha}</td>
         <td>${t.descripcion || ''}</td>
-        <td><span class="badge">${t.category?.nombre || ''}</span>${t.category?.global ? ' ⭐' : ''}</td>
+        <td>
+          <span class="badge">${t.category?.nombre || ''}</span>
+          <!-- ⬇️ Quitamos el indicador de global -->
+          <!-- <small class="muted">${t.category?.global ? '⭐' : ''}</small> -->
+          <!-- (Opcional) Si quieres mostrar también el tipo, descomenta:
+          <small class="muted"> (${t.category?.tipo || ''})</small>
+          -->
+        </td>
         <td>${t.paymentMethod?.nombre || ''}</td>
         <td>S/ ${Number(t.monto).toFixed(2)}</td>
         <td>
           <button class="secondary" onclick='openTx({id:${t.id}, fecha:"${t.fecha}", monto:${Number(t.monto)}, descripcion:"${(t.descripcion||'').replace(/"/g,'&quot;')}"})'>Editar</button>
-          
           <button class="secondary" onclick="eliminar(${t.id})">Eliminar</button>
         </td>
       </tr>`).join('');
   }
+
   function openTx(tx){
     txId = tx.id;
     txEditFecha.value = tx.fecha;
@@ -130,33 +146,56 @@
     txEditDesc.value = tx.descripcion;
     txModalOv.style.display = 'flex';
   }
+
   function closeTx(){ txModalOv.style.display = 'none'; txId = null; }
+
   async function guardarTx(){
     if(!askConfirm('¿Seguro de editar esta transacción?')) return;
     try{
-      await API.put(`/api/transactions/${txId}`, { fecha: txEditFecha.value, monto: Number(txEditMonto.value), descripcion: txEditDesc.value });
+      await API.put(`/api/transactions/${txId}`, {
+        fecha: txEditFecha.value,
+        monto: Number(txEditMonto.value),
+        descripcion: txEditDesc.value
+      });
       showMsg('txEditMsg','success','Se editó correctamente.');
       setTimeout(()=>{ closeTx(); cargar(); }, 500);
-    }catch(e){ showMsg('txEditMsg','error', formatErr('editar la transacción', e)); }
+    }catch(e){
+      showMsg('txEditMsg','error', formatErr('editar la transacción', e));
+    }
   }
+
   async function crear(){
     try{
-      const payload = { fecha: txFecha.value, monto: Number(txMonto.value), descripcion: txDesc.value, categoryId: Number(txCat.value), paymentMethodId: Number(txPM.value) };
+      const payload = {
+        fecha: txFecha.value,
+        monto: Number(txMonto.value),
+        descripcion: txDesc.value,
+        categoryId: Number(txCat.value),
+        paymentMethodId: Number(txPM.value)
+      };
       await API.post('/api/transactions', payload);
       showMsg('msg','success','Transacción registrada correctamente.');
       await cargar();
-    }catch(e){ showMsg('msg','error', formatErr('registrar la transacción', e)); }
+    }catch(e){
+      showMsg('msg','error', formatErr('registrar la transacción', e));
+    }
   }
+
   async function eliminar(id){
     if(!askConfirm('¿Seguro de eliminar esta transacción?')) return;
     try{
       await API.del(`/api/transactions/${id}`);
       showMsg('msg','success','Se eliminó correctamente.');
       cargar();
-    }catch(e){ showMsg('msg','error', formatErr('eliminar la transacción', e)); }
+    }catch(e){
+      showMsg('msg','error', formatErr('eliminar la transacción', e));
+    }
   }
+
   function logout(){ Auth.logout(); window.location.href='/' }
-  cargarCats(); cargarPMs(); cargar();
+
+  cargarCats(); cargarPMs(); cargar(); setDefaultDates();
 </script>
+
 </body>
 </html>

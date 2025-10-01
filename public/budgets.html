@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="es">
 <head>
@@ -18,8 +17,9 @@
     <a href="/budgets.html">Presupuestos</a>
     <a href="/reports.html">Reportes</a>
     <button onclick="logout()">Salir</button>
-</div>
+  </div>
 </header>
+
 <div class="container">
   <h1>Presupuestos</h1>
   <div class="grid">
@@ -40,9 +40,12 @@
         </div>
       </div>
       <br/>
-      <button class="primary" onclick="guardar()">Guardar</button>
+      <button class="primary" onclick="guardar()" id="btnSave">Guardar</button>
+      <button class="secondary" onclick="limpiar()" id="btnClear">Limpiar</button>
+
       <div id="msg" class="toast"></div>
     </div>
+
     <div class="card">
       <h2>Listado</h2>
       <div>
@@ -54,19 +57,23 @@
         <br/>
         <button class="secondary" onclick="cargar()">Buscar</button>
       </div>
-      <table id="tabla"><thead><tr><th>Categoría</th><th>Mes/Año</th><th>Monto</th></tr></thead><tbody></tbody></table>
+      <!-- 👉 Agregamos columna Acciones -->
+      <table id="tabla">
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th>Mes/Año</th>
+            <th>Monto</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 </div>
- <!-- <footer>
-   Copyright &copy;
-      <script>
-        document.write(new Date().getFullYear());
-      </script>
-      <br />
-      Todos los derechos reservados
-      <i class="fa fa-heart" aria-hidden="true"></i>
-  </footer>-->
+
+<!-- <footer> ... </footer> -->
 
 <script src="/js/ui.js"></script>
 <script src="/js/auth.js"></script>
@@ -74,33 +81,145 @@
 <script>
   Auth.protect();
 
+  let editingId = null;        // null = crear, number = editar
+  let BUDGET_MAP = new Map();  // id -> presupuesto
+
   async function cargarCats(){
     const cats = await API.get('/api/categories');
-    bCat.innerHTML = cats.map(c=>`<option value="${c.id}">${c.nombre}${c.global ? ' (global)' : ''}</option>`).join('');
+    bCat.innerHTML = cats
+      .map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`)
+      .join('');
   }
+
+  function setModeCreate(){
+    editingId = null;
+    btnSave.textContent = 'Guardar';
+    // Limpia solo monto; deja cat/mes/año si quieres registrar varios parecidos
+    bMonto.value = '';
+    bMes.value = '';
+    bAnio.value = '';
+  }
+
+  function ensureCategoryOption(catId, catNombre, catTipo){
+    if (!catId) return;
+    const exists = Array.from(bCat.options).some(o => Number(o.value) === Number(catId));
+    if (!exists) {
+      const opt = document.createElement('option');
+      opt.value = String(catId);
+      const tipoTxt = catTipo ? ` (${catTipo})` : '';
+      opt.textContent = `${catNombre || 'Categoría'}${tipoTxt} — no visible`;
+      opt.dataset.temp = 'true'; // por si luego quieres remover temporales
+      bCat.appendChild(opt);
+    }
+    bCat.value = String(catId);
+  }
+
+  function setModeEdit(b){
+    editingId = b.id;
+    btnSave.textContent = 'Actualizar';
+
+    const catId     = b.category?.id ?? b.categoryId;
+    const catNombre = b.category?.nombre;
+    const catTipo   = b.category?.tipo;
+
+    // Asegura que la categoría del presupuesto esté en el select (aunque esté oculta)
+    ensureCategoryOption(catId, catNombre, catTipo);
+
+    bMonto.value = String(Number(b.montoMensual || 0));
+    bMes.value   = String(b.mes);
+    bAnio.value  = String(b.anio);
+
+    showMsg('msg','success','Presupuesto cargado para edición. Modifica los campos y pulsa Actualizar.');
+  }
+
+  function limpiar(){
+    setModeCreate();
+    showMsg('msg','success','Formulario limpiado.');
+  }
+
   async function cargar(){
     const q = new URLSearchParams();
-    if(fMes.value) q.append('mes', fMes.value);
-    if(fAnio.value) q.append('anio', fAnio.value);
+    if (fMes.value)  q.append('mes',  fMes.value);
+    if (fAnio.value) q.append('anio', fAnio.value);
+
     const budgets = await API.get('/api/budgets' + (q.toString()? '?' + q.toString() : ''));
+    BUDGET_MAP = new Map(budgets.map(b => [b.id, b]));
+
     const tbody = document.querySelector('#tabla tbody');
-    tbody.innerHTML = budgets.map(b=>`
-      <tr>
-        <td>${b.category?.nombre || ''}${b.category?.global ? ' (global)' : ''}</td>
-        <td>${b.mes}/${b.anio}</td>
-        <td>S/ ${Number(b.montoMensual).toFixed(2)}</td>
-      </tr>`).join('');
+    tbody.innerHTML = budgets.map(b => {
+      const catNombre = b.category?.nombre || '';
+      const catTipo   = b.category?.tipo ? ` (${b.category.tipo})` : '';
+      const monto     = Number(b.montoMensual).toFixed(2);
+      return `
+        <tr>
+          <td>${catNombre}${catTipo}</td>
+          <td>${b.mes}/${b.anio}</td>
+          <td>S/ ${monto}</td>
+          <td>
+            <button class="secondary" onclick="editar(${b.id})">Editar</button>
+            <button class="secondary" onclick="eliminar(${b.id})">Eliminar</button>
+          </td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="4" class="muted">Sin resultados</td></tr>';
   }
+
+  function editar(id){
+    const b = BUDGET_MAP.get(id);
+    if (!b) return;
+    setModeEdit(b);
+  }
+
   async function guardar(){
     try{
-      const payload = { categoryId: Number(bCat.value), montoMensual: Number(bMonto.value), mes: Number(bMes.value), anio: Number(bAnio.value) };
-      const r = await API.post('/api/budgets', payload);
-      showMsg('msg','success', r.message || 'Presupuesto registrado correctamente.');
-      cargar();
-    }catch(e){ showMsg('msg','error', formatErr('guardar el presupuesto', e)); }
+      const payload = {
+        categoryId:   Number(bCat.value),
+        montoMensual: Number(bMonto.value),
+        mes:          Number(bMes.value),
+        anio:         Number(bAnio.value)
+      };
+
+      if (!payload.categoryId || isNaN(payload.montoMensual) || !payload.mes || !payload.anio) {
+        showMsg('msg','error','Completa categoría, monto, mes y año.');
+        return;
+      }
+
+      if (editingId) {
+        if (!askConfirm('¿Seguro de actualizar este presupuesto?')) return;
+        const r = await API.put(`/api/budgets/${editingId}`, payload);
+        showMsg('msg','success', r.message || 'Presupuesto editado correctamente.');
+      } else {
+        const r = await API.post('/api/budgets', payload);
+        showMsg('msg','success', r.message || 'Presupuesto registrado correctamente.');
+      }
+
+      setModeCreate();
+      // (Opcional) eliminar opciones temporales añadidas cuando se ocultó una categoría
+      Array.from(bCat.querySelectorAll('option[data-temp="true"]')).forEach(o => o.remove());
+      await cargar();
+    }catch(e){
+      showMsg('msg','error', formatErr(editingId ? 'editar el presupuesto' : 'guardar el presupuesto', e));
+    }
   }
+
+  async function eliminar(id){
+    if (!askConfirm('¿Seguro de eliminar este presupuesto?')) return;
+    try{
+      await API.del(`/api/budgets/${id}`);
+      showMsg('msg','success','Se eliminó correctamente.');
+      if (editingId === id) setModeCreate();
+      await cargar();
+    }catch(e){
+      showMsg('msg','error', formatErr('eliminar el presupuesto', e));
+    }
+  }
+
   function logout(){ Auth.logout(); window.location.href='/' }
-  cargarCats(); cargar();
+
+  // Inicialización
+  cargarCats().then(setModeCreate);
+  cargar();
 </script>
+
+
 </body>
 </html>

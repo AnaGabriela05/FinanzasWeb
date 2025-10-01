@@ -1,0 +1,61 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Aprendizaje — Finanzas</title>
+<link rel="stylesheet" href="/css/styles.css"/>
+</head><body>
+<header>
+  <div><a href="/dashboard.html">💸 Finanzas — Aprendizaje</a></div>
+  <div class="nav">
+    <a href="/categories.html">Categorías</a>
+    <a href="/payment-methods.html">Métodos</a>
+    <a href="/transactions.html">Transacciones</a>
+    <a href="/budgets.html">Presupuestos</a>
+    <a href="/reports.html">Reportes</a>
+    <a href="/learning.html" class="active-link">Aprendizaje</a>
+    <button onclick="logout()">Salir</button>
+  </div>
+</header>
+
+<div class="container">
+  <h1>Aprendizaje</h1>
+  <p class="muted">Completa lecciones rápidas de educación financiera y aprueba sus quizzes.</p>
+  <div id="temas" class="grid"></div>
+  <div id="msg" class="toast"></div>
+</div>
+
+<footer>© Finanzas</footer>
+
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script>
+Auth.protect();
+
+function progresoBar(hechos,total){
+  const pct = total? Math.round(hechos*100/total) : 0;
+  return `<div class="badge">${hechos}/${total} · ${pct}%</div>`;
+}
+
+async function cargar(){
+  try{
+    const topics = await API.get('/api/learning/topics');
+    temas.innerHTML = topics.map(t => `
+      <div class="card">
+        <h2>${t.titulo}</h2>
+        <p class="muted">${t.descripcion || ''}</p>
+        <div>${progresoBar(t.completadas, t.totalLecciones)}</div>
+        <ul style="margin-top:10px;">
+          ${(t.lessons||[]).map(l => `
+            <li style="margin-bottom:8px;">
+              <a href="/lesson.html?id=${l.id}">📘 ${l.titulo}</a>
+              <small class="muted"> · ${l.duracionMin} min</small>
+            </li>`).join('')}
+        </ul>
+      </div>
+    `).join('');
+  }catch(e){ showMsg('msg','error', formatErr('cargar los temas', e)); }
+}
+function logout(){ Auth.logout(); location.href='/'; }
+cargar();
+</script>
+</body></html>

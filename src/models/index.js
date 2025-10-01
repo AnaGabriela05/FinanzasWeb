@@ -5,6 +5,7 @@ const Category = require('./category');
 const PaymentMethod = require('./paymentMethod');
 const Transaction = require('./transaction');
 const Budget = require('./budget');
+const UserCategoryHide = require('./userCategoryHide');
 
 // Roles (1:N)
 Role.hasMany(User, { foreignKey: 'roleId', as: 'users' });
@@ -33,4 +34,7 @@ Transaction.belongsTo(PaymentMethod, { foreignKey: 'paymentMethodId', as: 'payme
 Category.hasMany(Budget, { foreignKey: 'categoryId', as: 'budgets' });
 Budget.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 
-module.exports = { sequelize, Role, User, Category, PaymentMethod, Transaction, Budget };
+UserCategoryHide.belongsTo(User,    { foreignKey: 'userId',    as: 'user' });
+UserCategoryHide.belongsTo(Category,{ foreignKey: 'categoryId',as: 'category' });
+
+module.exports = { sequelize, Role, User, Category, PaymentMethod, Transaction, Budget,UserCategoryHide };
