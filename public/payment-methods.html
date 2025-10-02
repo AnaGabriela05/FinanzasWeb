@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="es">
 <head>
@@ -17,11 +16,14 @@
     <a href="/budgets.html">Presupuestos</a>
     <a href="/reports.html">Reportes</a>
     <button onclick="logout()">Salir</button>
-</div>
+  </div>
 </header>
+
 <div class="container">
   <h1>Métodos de pago</h1>
+
   <div class="grid">
+    <!-- Formulario -->
     <div class="card">
       <h2>Nuevo método</h2>
       <label>Nombre</label>
@@ -30,9 +32,20 @@
       <button class="primary" onclick="crear()">Crear</button>
       <div id="msg" class="toast"></div>
     </div>
+
+    <!-- Listado -->
     <div class="card">
       <h2>Listado</h2>
-      <table id="tabla"><thead><tr><th>Nombre</th><th>Activo</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+      <table id="tabla">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Activo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -57,26 +70,18 @@
   </div>
 </div>
 
- <!-- <footer>
-   Copyright &copy;
-      <script>
-        document.write(new Date().getFullYear());
-      </script>
-      <br />
-      Todos los derechos reservados
-      <i class="fa fa-heart" aria-hidden="true"></i>
-  </footer>-->
-
+<!-- Scripts -->
 <script src="/js/ui.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/api.js"></script>
 <script>
   Auth.protect();
   let pmId = null;
+  let PM_MAP = new Map();
 
   function openPm(p){
     pmId = p.id;
-    pmEditNombre.value = p.nombre;
+    pmEditNombre.value = p.nombre || '';
     pmEditActivo.checked = !!p.activo;
     pmModalOv.style.display = 'flex';
   }
@@ -84,43 +89,94 @@
 
   async function cargar(){
     const list = await API.get('/api/payment-methods');
+    PM_MAP = new Map(list.map(p => [p.id, p]));
     const tbody = document.querySelector('#tabla tbody');
-    tbody.innerHTML = list.map(p=>`
-      <tr>
-        <td>${p.nombre}</td>
-        <td>${p.activo ? 'Sí' : 'No'}</td>
-        <td>
-          <button class="secondary" onclick='openPm({id:${p.id}, nombre:"${p.nombre.replace(/"/g,'&quot;')}", activo:${p.activo}})'>Editar</button>
-          <button class="secondary" onclick="eliminar(${p.id})">Eliminar</button>
-        </td>
-      </tr>`).join('');
+
+    tbody.innerHTML = list.map(p => {
+      const safeName = (p.nombre || '')
+        .replace(/&/g,'&amp;')
+        .replace(/"/g,'&quot;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;');
+
+      return `
+        <tr>
+          <td>${safeName}</td>
+          <td>${p.activo ? 'Sí' : 'No'}</td>
+          <td class="actions">
+            <button class="btn-icon btn-edit"
+              title="Editar" aria-label="Editar"
+              onclick='openPm({id:${p.id}, nombre:"${safeName}", activo:${p.activo}})'>
+              <!-- lápiz -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </button>
+
+            <button class="btn-icon btn-delete"
+              title="Eliminar" aria-label="Eliminar"
+              onclick="eliminar(${p.id})">
+              <!-- papelera -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
   }
+
   async function crear(){
     try{
-      await API.post('/api/payment-methods', { nombre: pmNombre.value.trim() });
+      const nombre = (pmNombre.value || '').trim();
+      if(!nombre) return showMsg('msg','error','Ingresa un nombre.');
+      await API.post('/api/payment-methods', { nombre });
       showMsg('msg','success','Método registrado correctamente.');
       pmNombre.value='';
       cargar();
-    }catch(e){ showMsg('msg','error', formatErr('registrar el método', e)); }
+    }catch(e){
+      showMsg('msg','error', formatErr('registrar el método', e));
+    }
   }
+
   async function guardarPm(){
     if(!askConfirm('¿Seguro de editar este método?')) return;
     try{
-      await API.put(`/api/payment-methods/${pmId}`, { nombre: pmEditNombre.value.trim(), activo: pmEditActivo.checked });
+      await API.put(`/api/payment-methods/${pmId}`, {
+        nombre: (pmEditNombre.value || '').trim(),
+        activo: pmEditActivo.checked
+      });
       showMsg('pmEditMsg','success','Se editó correctamente.');
       setTimeout(()=>{ closePm(); cargar(); }, 500);
-    }catch(e){ showMsg('pmEditMsg','error', formatErr('editar el método', e)); }
+    }catch(e){
+      showMsg('pmEditMsg','error', formatErr('editar el método', e));
+    }
   }
+
   async function eliminar(id){
+    const pm = PM_MAP.get(id) || null;
+    if(!pm) { await cargar(); return; }
+
     if(!askConfirm('¿Seguro de eliminar este método?')) return;
     try{
       await API.del(`/api/payment-methods/${id}`);
       showMsg('msg','success','Se eliminó correctamente.');
       cargar();
-    }catch(e){ showMsg('msg','error', formatErr('eliminar el método', e)); }
+    }catch(e){
+      showMsg('msg','error', formatErr('eliminar el método', e));
+    }
   }
+
   function logout(){ Auth.logout(); window.location.href='/' }
+
   cargar();
 </script>
+
 </body>
 </html>

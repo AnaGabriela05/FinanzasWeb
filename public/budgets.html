@@ -9,7 +9,6 @@
 <body>
 <header>
   <div><a href="/dashboard.html">💸 Finanzas — Presupuestos</a></div>
-  
   <div class="nav">
     <a href="/categories.html">Categorías</a>
     <a href="/payment-methods.html">Métodos de pago</a>
@@ -20,15 +19,18 @@
   </div>
 </header>
 
-<div class="container">
+<div class="container budget-page">
   <h1>Presupuestos</h1>
   <div class="grid">
-    <div class="card">
+    <!-- Formulario -->
+    <div class="card budget-form">
       <h2>Asignar / Actualizar</h2>
       <label>Categoría</label>
       <select id="bCat"></select>
+
       <label>Monto mensual</label>
       <input id="bMonto" type="number" step="0.01"/>
+
       <div class="grid" style="grid-template-columns:1fr 1fr;">
         <div>
           <label>Mes</label>
@@ -39,26 +41,28 @@
           <input id="bAnio" type="number" min="2000" max="2100"/>
         </div>
       </div>
-      <br/>
-      <button class="primary" onclick="guardar()" id="btnSave">Guardar</button>
-      <button class="secondary" onclick="limpiar()" id="btnClear">Limpiar</button>
 
+      <br/>
+      <button class="primary" id="btnSave"  onclick="guardar()">Guardar</button>
+      <button class="secondary" id="btnClear" onclick="limpiar()">Limpiar</button>
       <div id="msg" class="toast"></div>
     </div>
 
+    <!-- Listado -->
     <div class="card">
       <h2>Listado</h2>
       <div>
         <label>Filtrar por mes/año</label>
         <div class="grid" style="grid-template-columns:1fr 1fr;">
-          <input id="fMes" type="number" min="1" max="12"/>
+          <input id="fMes"  type="number" min="1" max="12"/>
           <input id="fAnio" type="number" min="2000" max="2100"/>
         </div>
         <br/>
         <button class="secondary" onclick="cargar()">Buscar</button>
+
       </div>
-      <!-- 👉 Agregamos columna Acciones -->
-      <table id="tabla">
+
+      <table id="tabla" class="budget-table">
         <thead>
           <tr>
             <th>Categoría</th>
@@ -73,15 +77,14 @@
   </div>
 </div>
 
-<!-- <footer> ... </footer> -->
-
+<!-- Scripts -->
 <script src="/js/ui.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/api.js"></script>
 <script>
   Auth.protect();
 
-  let editingId = null;        // null = crear, number = editar
+  let editingId = null;        // null = crear; number = editar
   let BUDGET_MAP = new Map();  // id -> presupuesto
 
   async function cargarCats(){
@@ -94,10 +97,9 @@
   function setModeCreate(){
     editingId = null;
     btnSave.textContent = 'Guardar';
-    // Limpia solo monto; deja cat/mes/año si quieres registrar varios parecidos
     bMonto.value = '';
-    bMes.value = '';
-    bAnio.value = '';
+    bMes.value   = '';
+    bAnio.value  = '';
   }
 
   function ensureCategoryOption(catId, catNombre, catTipo){
@@ -108,7 +110,7 @@
       opt.value = String(catId);
       const tipoTxt = catTipo ? ` (${catTipo})` : '';
       opt.textContent = `${catNombre || 'Categoría'}${tipoTxt} — no visible`;
-      opt.dataset.temp = 'true'; // por si luego quieres remover temporales
+      opt.dataset.temp = 'true';
       bCat.appendChild(opt);
     }
     bCat.value = String(catId);
@@ -122,18 +124,19 @@
     const catNombre = b.category?.nombre;
     const catTipo   = b.category?.tipo;
 
-    // Asegura que la categoría del presupuesto esté en el select (aunque esté oculta)
     ensureCategoryOption(catId, catNombre, catTipo);
 
     bMonto.value = String(Number(b.montoMensual || 0));
     bMes.value   = String(b.mes);
     bAnio.value  = String(b.anio);
 
-    showMsg('msg','success','Presupuesto cargado para edición. Modifica los campos y pulsa Actualizar.');
+    showMsg('msg','success','Presupuesto cargado para edición. Modifica y pulsa Actualizar.');
   }
 
   function limpiar(){
     setModeCreate();
+    // elimina opciones temporales (si las hubo)
+    Array.from(bCat.querySelectorAll('option[data-temp="true"]')).forEach(o => o.remove());
     showMsg('msg','success','Formulario limpiado.');
   }
 
@@ -147,17 +150,40 @@
 
     const tbody = document.querySelector('#tabla tbody');
     tbody.innerHTML = budgets.map(b => {
-      const catNombre = b.category?.nombre || '';
+      const catNombre = (b.category?.nombre || '')
+        .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const catTipo   = b.category?.tipo ? ` (${b.category.tipo})` : '';
       const monto     = Number(b.montoMensual).toFixed(2);
+
       return `
         <tr>
           <td>${catNombre}${catTipo}</td>
           <td>${b.mes}/${b.anio}</td>
           <td>S/ ${monto}</td>
-          <td>
-            <button class="secondary" onclick="editar(${b.id})">Editar</button>
-            <button class="secondary" onclick="eliminar(${b.id})">Eliminar</button>
+          <td class="actions">
+            <button class="btn-icon btn-edit"
+              title="Editar" aria-label="Editar"
+              onclick="editar(${b.id})">
+              <!-- lápiz -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </button>
+
+            <button class="btn-icon btn-delete"
+              title="Eliminar" aria-label="Eliminar"
+              onclick="eliminar(${b.id})">
+              <!-- papelera -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
           </td>
         </tr>`;
     }).join('') || '<tr><td colspan="4" class="muted">Sin resultados</td></tr>';
@@ -193,7 +219,6 @@
       }
 
       setModeCreate();
-      // (Opcional) eliminar opciones temporales añadidas cuando se ocultó una categoría
       Array.from(bCat.querySelectorAll('option[data-temp="true"]')).forEach(o => o.remove());
       await cargar();
     }catch(e){
@@ -219,7 +244,5 @@
   cargarCats().then(setModeCreate);
   cargar();
 </script>
-
-
 </body>
 </html>

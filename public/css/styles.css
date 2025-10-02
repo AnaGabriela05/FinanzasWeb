@@ -124,7 +124,7 @@ header a, header button{
   box-shadow:var(--shadow);
 }
 
-.grid{ display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+.grid{ display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin: 20px; }
 .card{ border:1px solid #e5e7eb; border-radius:var(--radius); padding:16px; background:#fff; }
 
 /*==================== NAV (links superiores) ====================*/
@@ -135,7 +135,7 @@ header a, header button{
   transition:background .2s ease,color .2s ease;
 }
 .nav a:hover, .nav a.active-link{
-  background:rgba(255,183,3,.22); /* ámbar translúcido */
+  background:rgba(255,183,3,.22);
   color:#fff;
 }
 
@@ -156,6 +156,15 @@ input:focus, select:focus{
   box-shadow:0 0 0 3px rgba(255,183,3,.25);
 }
 
+/* (Checkbox simple en línea, por si lo usas) */
+label.toggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin: 6px 0 10px;
+}
+
 /*==================== BOTONES ====================*/
 button{ font-family:inherit; }
 button.primary{
@@ -166,11 +175,13 @@ button.primary{
   border:none;
   cursor:pointer;
   font-weight:600;
+  width: 100%;
+  margin-bottom: 12px;
 }
 button.primary:hover{ background:var(--first-color-alt); color:#111; }
 
 button.secondary{
-  background:#64748B; /* neutro frío que contrasta con la paleta cálida */
+  background:#64748B; /* neutro frío */
   color:#fff;
   padding:10px 14px;
   border-radius:10px;
@@ -178,6 +189,8 @@ button.secondary{
   cursor:pointer;
   font-weight:600;
   opacity:.96;
+  width: 100%;
+  margin-bottom: 12px;
 }
 button.secondary:hover{ opacity:1; }
 
@@ -189,7 +202,7 @@ button.google{
 }
 button.google img{ width:18px; height:18px; }
 
-/*==================== TABLAS ====================*/
+/*==================== TABLAS (genérico) ====================*/
 table{ width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; }
 thead th{
   background:#F7F9FF;
@@ -252,10 +265,298 @@ small.muted{ color:#6b7280 }
 footer{
   background:var(--first-color-second);
   color:#fff; text-align:center; padding:24px 0; 
-  margin-top: auto;--margin-top:auto;
+  margin-top: auto; --margin-top:auto;
 }
 
 /*========== SCROLL BAR ==========*/
 ::-webkit-scrollbar{ width: .6rem; background:var(--scroll-bar-color); border-radius:.5rem; }
 ::-webkit-scrollbar-thumb{ background:var(--scroll-thumb-color); border-radius:.5rem; }
 ::-webkit-scrollbar-thumb:hover{ background:#C6D6FF; }
+
+/* === Transacciones: form más estrecho que el listado === */
+.tx-page .grid { gap: 20px; }
+@media (min-width: 900px){
+  .tx-page .grid { grid-template-columns: 0.85fr 1.35fr; }
+}
+@media (min-width: 1200px){
+  .tx-page .grid { grid-template-columns: 0.8fr 1.5fr; }
+}
+/* Compacta solo el formulario */
+.tx-form { padding: 16px 14px; }
+.tx-form h2 { margin-bottom: 10px; }
+.tx-form label { font-size: 13px; margin-bottom: 4px; }
+.tx-form input, .tx-form select{
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-size: 0.92rem;
+}
+.tx-form .primary{
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+}
+
+/* === Presupuestos: formulario más estrecho y compacto === */
+.budget-page .grid { gap: 20px; }
+/* Desktop */
+@media (min-width: 900px){
+  .budget-page .grid { grid-template-columns: 0.9fr 1.35fr; }
+}
+/* Pantallas anchas */
+@media (min-width: 1200px){
+  .budget-page .grid { grid-template-columns: 0.85fr 1.6fr; }
+}
+/* Compactar solo el formulario */
+.budget-form { padding: 16px 14px; }
+.budget-form h2 { margin-bottom: 10px; }
+.budget-form label { font-size: 13px; margin-bottom: 4px; }
+.budget-form input,
+.budget-form select{
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-size: 0.92rem;
+}
+/* Botón principal a bloque, con separación abajo */
+.budget-form .primary{
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;   /* ← separa del siguiente botón */
+}
+
+/* Asegura que el secundario no “suba” por el baseline */
+.budget-form .secondary{
+  display: block;
+  width: 100%;  
+}
+
+/* ==== Tabla de Presupuestos sin scroll y con columnas limpias ==== */
+.budget-table{
+  table-layout: fixed;
+  width: 100%;
+}
+.budget-table th,
+.budget-table td{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+/* Distribución de columnas (ajusta si lo necesitas) */
+.budget-table th:nth-child(1),
+.budget-table td:nth-child(1){ width: 35%; }     /* Categoría */
+.budget-table th:nth-child(2),
+.budget-table td:nth-child(2){ width: 18%; }     /* Mes/Año */
+.budget-table th:nth-child(3),
+.budget-table td:nth-child(3){
+  width: 15%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* Acciones fluye según contenido */
+.budget-table th:nth-child(4),
+.budget-table td:nth-child(4){ width: fit-content; }
+
+/* Alineación y comportamiento de Acciones (reutilizable) */
+td.actions{
+  display: flex;
+  width: fit-content;
+  gap: 8px;
+  justify-content: flex-end;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+/* ===== Botones de acción con ícono (reutilizable) ===== */
+:root{
+  --edit-bg:   #2fb3c1; /* turquesa/teal */
+  --delete-bg: #eb6161; /* rojo */
+}
+.btn-icon{
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  transition: transform .08s ease, filter .15s ease, box-shadow .15s ease;
+}
+.btn-icon:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+}
+.btn-icon:active{ transform: translateY(0); }
+.btn-edit  { background: var(--edit-bg); }
+.btn-delete{ background: var(--delete-bg); }
+.btn-icon svg{
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  pointer-events: none;
+}
+
+/* Responsive: íconos un poco más compactos en móvil */
+@media (max-width: 480px){
+  .btn-icon{ width: 32px; height: 32px; }
+  .btn-icon svg{ width: 16px; height: 16px; }
+}
+/* ==================== REPORTES (resumen + gráficos) ==================== */
+/* Layout: filtros | contenido (resumen + panel) */
+.reports-page .grid{ gap:18px; }
+
+@media (min-width: 980px){
+  .reports-page .grid{
+    /* filtros (izq) | contenido (der) */
+    grid-template-columns: 0.9fr 1.6fr;
+  }
+}
+@media (min-width: 1280px){
+  .reports-page .grid{ grid-template-columns: 0.85fr 1.75fr; }
+}
+
+/* Columna de filtros: botones a bloque y con separación */
+.reports-page .filters-card .nav,
+.reports-page .filters-card .toolbar{
+  display:flex; flex-direction:column; gap:10px;
+}
+.reports-page .filters-card button{ width:100%; }
+
+/* Resumen en tarjetas (KPI) */
+.reports-page .summary{ margin-bottom:10px; }
+
+.reports-page .summary-grid{
+  display:grid;
+  gap:12px;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+}
+.reports-page .summary-grid .metric{
+  display:flex; flex-direction:column; gap:6px;
+  padding:14px;
+  border:1px solid #eef2ff;
+  border-radius:12px;
+  background:#fff;
+}
+.reports-page .summary-grid .metric .label{
+  margin:0; color:#6b7280; font-size:13px;
+}
+.reports-page .summary-grid .metric .value{
+  margin:0; font-size:22px; font-weight:700; color:#111;
+  font-variant-numeric: tabular-nums; /* alinea números */
+}
+.reports-page .summary-grid .metric .sub{
+  font-size:12px; color:#6b7280;
+}
+
+/* Panel de gráficos */
+.reports-page .charts-grid{
+  display:grid; gap:16px;
+  grid-template-columns: 1.1fr 1fr;   /* barras | pie */
+}
+.reports-page .charts-grid > div{
+  background:#fff;
+  border:1px solid #eef2ff;
+  border-radius:12px;
+  padding:14px;
+}
+.reports-page .charts-grid h3{
+  margin-bottom:8px;
+  font-size:14px;
+  color:#374151;
+}
+
+/* Área a exportar (resumen + gráficos) */
+#pdfArea{ background:transparent; }
+/* Oculta elementos marcados como no exportables cuando se genera el PDF */
+#pdfArea.exporting .no-export{ display:none !important; }
+
+/* Responsive */
+@media (max-width: 900px){
+  .reports-page .grid{ grid-template-columns: 1fr; }
+  .reports-page .summary-grid{ grid-template-columns: repeat(2, 1fr); }
+  .reports-page .charts-grid{ grid-template-columns: 1fr; }
+}
+
+/* Vista de impresión (por si se imprime desde el navegador) */
+@media print{
+  header, .nav, .toast, .no-export{ display:none !important; }
+  .container{ box-shadow:none; padding:0; }
+  body{ background:#fff; }
+}
+/* ========= REPORTES (responsive y estable) ========= */
+
+/* 2 columnas: Filtros fijo-elástico | Panel flexible */
+.reports-page .layout {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: clamp(260px, 26vw, 360px) 1fr;
+}
+@media (max-width: 980px){
+  .reports-page .layout { grid-template-columns: 1fr; }
+}
+
+/* Métricas en tarjetas, se auto-rompen según ancho */
+.reports-page .summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+}
+.reports-page .summary-grid .metric {
+  padding: 14px;
+  border: 1px solid #eef2ff;
+  border-radius: 12px;
+  background: #fff;
+}
+
+/* Contenedor de charts 100% fluidos */
+.reports-page .charts-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* Tarjeta del chart con alto mínimo — el canvas rellena */
+.reports-page .chart-card {
+  background: #fff;
+  border: 1px solid #eef2ff;
+  border-radius: 12px;
+  padding: 14px;
+  min-height: 320px;           /* <- alto base cómodo */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* El canvas ocupa todo el espacio disponible del card */
+.reports-page .chart-card canvas{
+  flex: 1;
+  width: 100% !important;
+  height: 100% !important;     /* Chart.js + maintainAspectRatio:false */
+  display: block;
+}
+
+/* Evita desbordes raros */
+.reports-page .card { overflow: hidden; }
+
+/* Botoneras arriba/derecha: se acomodan en móvil */
+.reports-page .toolbar{
+  display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;
+}
+
+/* Área que se exporta a PDF: oculta lo marcado como .no-export */
+#pdfArea.exporting .no-export{ display:none !important; }
+
+/* Micro-ajustes en móviles */
+@media (max-width: 600px){
+  .reports-page .chart-card { min-height: 280px; }
+}
+/* Oculta elementos marcados como no-export solo durante la captura */
+#pdfArea.exporting .no-export { display: none !important; }
+
+
+.reports-page .chart-box {
+  height: 520px; }  /* súbelo o bájalo a tu gusto */

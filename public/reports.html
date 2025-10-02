@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="es">
 <head>
@@ -7,10 +6,10 @@
   <title>Reportes — Finanzas</title>
   <link rel="stylesheet" href="/css/styles.css"/>
 </head>
+
 <body>
 <header>
   <div><a href="/dashboard.html">💸 Finanzas — Reportes</a></div>
-  
   <div class="nav">
     <a href="/categories.html">Categorías</a>
     <a href="/payment-methods.html">Métodos de pago</a>
@@ -18,12 +17,15 @@
     <a href="/budgets.html">Presupuestos</a>
     <a href="/reports.html">Reportes</a>
     <button onclick="logout()">Salir</button>
-</div>
+  </div>
 </header>
-<div class="container">
+
+<div class="container reports-page">
   <h1>Reportes de transacciones</h1>
+
   <div class="grid">
-    <div class="card">
+    <!-- Filtros -->
+    <div class="card filters-card">
       <h2>Filtros</h2>
       <label>Desde</label>
       <input type="date" id="fDesde"/>
@@ -33,35 +35,72 @@
       <select id="fCat"><option value="">(Todas)</option></select>
       <label>Método de pago</label>
       <select id="fPM"><option value="">(Todos)</option></select>
-      <br/>
-      <div class="nav">
-        <button class="secondary" onclick="verResumen()">Ver resumen</button>
-        <button class="primary" onclick="descargar('xlsx')">Descargar Excel</button>
-        <button class="primary" onclick="descargar('pdf')">Descargar PDF</button>
+
+      <!-- Toolbar de acciones (un solo lugar) -->
+      <div class="toolbar">
+        <button class="secondary" id="btnResumen">Ver resumen</button>
+        <button class="secondary" id="btnActualizar">Actualizar panel</button>
+        <button class="primary"   id="btnExcel">Descargar Excel</button>
+        <button class="primary"   id="btnPDFLista">Descargar PDF (lista)</button>
+        <button class="primary"   id="btnPanelPDF">Exportar Resumen + Gráficos</button>
       </div>
+
       <div id="msg" class="toast"></div>
     </div>
-    <div class="card">
+
+    <!-- Resumen + Panel envueltos para exportación -->
+    <div class="card" id="pdfArea">
+      <!-- Resumen en tarjetas -->
       <h2>Resumen</h2>
-      <div id="resumen"></div>
+      <div class="summary-grid" id="resumenCards">
+        <div class="card metric"><p>Total ingresos</p><h3 id="mIngresos">S/ 0.00</h3></div>
+        <div class="card metric"><p>Total gastos</p><h3 id="mGastos">S/ 0.00</h3></div>
+        <div class="card metric"><p>Saldo</p><h3 id="mSaldo">S/ 0.00</h3></div>
+        <div class="card metric"><p>Transacciones</p><h3 id="mCount">0</h3></div>
+      </div>
+
+      <!-- Panel visual -->
+      <div class="no-export" style="height:8px"></div>
+      <h2 class="no-export">Panel visual</h2>
+
+      <div class="grid charts-grid" id="insightsCard">
+        <div>
+          <h3>Ingresos vs Gastos por mes</h3>
+          <canvas id="chartMonthly" ></canvas>
+        </div>
+        <div>
+          <h3>Distribución de gastos por categoría</h3>
+          <canvas id="chartCategory"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 </div>
- <!-- <footer>
-   Copyright &copy;
-      <script>
-        document.write(new Date().getFullYear());
-      </script>
-      <br />
-      Todos los derechos reservados
-      <i class="fa fa-heart" aria-hidden="true"></i>
-  </footer>-->
 
+<!-- libs y utilidades -->
 <script src="/js/ui.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/api.js"></script>
+
+<!-- Chart.js + plugin de etiquetas (DEBE ir antes de tu script inline) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<!-- Captura y PDF -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.1"></script>
+
 <script>
   Auth.protect();
+
+  // ---- Helpers de métricas
+  function setMetrics({ ingresos=0, gastos=0, saldo=0, count=null }){
+    mIngresos.textContent = 'S/ ' + Number(ingresos||0).toFixed(2);
+    mGastos.textContent   = 'S/ ' + Number(gastos||0).toFixed(2);
+    mSaldo.textContent    = 'S/ ' + Number(saldo||0).toFixed(2);
+    if (count !== null) mCount.textContent = String(count);
+  }
 
   function setDefaultDates(){
     const now = new Date();
@@ -71,23 +110,17 @@
   }
 
   async function loadFilters(){
-    try {
+    try{
       const cats = await API.get('/api/categories');
       const catsSorted = [...cats].sort((a,b)=> (a.nombre||'').localeCompare(b.nombre||''));
-      fCat.innerHTML =
-        '<option value="">(Todas)</option>' +
-        catsSorted.map(c =>
-          `<option value="${c.id}">${c.nombre} (${c.tipo || '—'})</option>`
-        ).join('');
+      fCat.innerHTML = '<option value="">(Todas)</option>' +
+        catsSorted.map(c=>`<option value="${c.id}">${c.nombre} (${c.tipo||'—'})</option>`).join('');
 
       const pm = await API.get('/api/payment-methods');
       const pmSorted = [...pm].sort((a,b)=> (a.nombre||'').localeCompare(b.nombre||''));
-      fPM.innerHTML =
-        '<option value="">(Todos)</option>' +
-        pmSorted.map(p =>
-          `<option value="${p.id}">${p.nombre}</option>`
-        ).join('');
-    } catch (e) {
+      fPM.innerHTML = '<option value="">(Todos)</option>' +
+        pmSorted.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+    }catch(e){
       showMsg('msg','error', formatErr('cargar filtros', e));
     }
   }
@@ -95,72 +128,178 @@
   function buildQuery(){
     const q = new URLSearchParams();
     if (fDesde.value) q.append('from', fDesde.value);
-    if (fHasta.value) q.append('to', fHasta.value);
+    if (fHasta.value) q.append('to',   fHasta.value);
     if (fCat.value)   q.append('categoryId', fCat.value);
     if (fPM.value)    q.append('paymentMethodId', fPM.value);
     return q.toString();
   }
 
+  // ---- Resumen (con /api/transactions)
   async function verResumen(){
     try{
-      const qs = buildQuery();
+      const qs  = buildQuery();
       const arr = await API.get('/api/transactions' + (qs? '?' + qs : ''));
-      const totalIn  = arr.filter(t=>t.category?.tipo==='ingreso').reduce((a,b)=> a + Number(b.monto||0), 0);
-      const totalOut = arr.filter(t=>t.category?.tipo==='gasto' ).reduce((a,b)=> a + Number(b.monto||0), 0);
-      const saldo = totalIn - totalOut;
-
-      resumen.innerHTML = `
-        <p><strong>Total ingresos:</strong> S/ ${totalIn.toFixed(2)}</p>
-        <p><strong>Total gastos:</strong> S/ ${totalOut.toFixed(2)}</p>
-        <p><strong>Saldo:</strong> S/ ${saldo.toFixed(2)}</p>
-        <p><small>${arr.length} transacciones</small></p>
-      `;
+      const ingresos = arr.filter(t=>t.category?.tipo==='ingreso').reduce((a,b)=>a+Number(b.monto||0),0);
+      const gastos   = arr.filter(t=>t.category?.tipo==='gasto'  ).reduce((a,b)=>a+Number(b.monto||0),0);
+      const saldo    = ingresos - gastos;
+      setMetrics({ ingresos, gastos, saldo, count: arr.length });
       showMsg('msg','success','Resumen actualizado.');
     }catch(e){
       showMsg('msg','error', formatErr('obtener el resumen', e));
     }
   }
 
+  // ---- Exportar (Excel y PDF de lista del backend)
   async function descargar(format){
     try{
       const qs = buildQuery();
       const url = '/api/reports/transactions/export' + (qs? '?' + qs + '&' : '?') + 'format=' + format;
-      const res = await fetch(url, {
-        headers: { 'Authorization': 'Bearer ' + (Auth.token()||'') }
-      });
-      if(!res.ok){
-        const text = await res.text();
-        throw new Error(text || ('HTTP ' + res.status));
-      }
+      const res = await fetch(url, { headers:{ 'Authorization':'Bearer ' + (Auth.token()||'') } });
+      if(!res.ok){ throw new Error(await res.text() || ('HTTP '+res.status)); }
       const blob = await res.blob();
 
-      // Nombre de archivo
       const cd = res.headers.get('content-disposition');
       let fname = cd && /filename="?([^"]+)"?/.exec(cd)?.[1];
-      if (!fname) {
+      if(!fname){
         const desde = fDesde.value || 'inicio';
         const hasta = fHasta.value || 'hoy';
         fname = `reporte_transacciones_${desde}_${hasta}.${format}`;
       }
-
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = fname;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      a.href = URL.createObjectURL(blob); a.download = fname;
+      document.body.appendChild(a); a.click(); a.remove();
       showMsg('msg','success','Descarga iniciada.');
     }catch(e){
       showMsg('msg','error', formatErr('descargar el reporte', e));
     }
   }
 
-  function logout(){ Auth.logout(); window.location.href='/' }
+  // ---- Panel (insights) y charts
+  let CHART_MONTHLY, CHART_CATEGORY;
 
+  async function verInsights(){
+    const q = new URLSearchParams();
+    if (fDesde?.value) q.append('from', fDesde.value);
+    if (fHasta?.value) q.append('to',   fHasta.value);
+
+    const data = await API.get('/api/reports/insights' + (q.toString()? '?' + q.toString() : ''));
+
+    // Actualiza métricas si el endpoint trae totales
+    if (data?.totals){
+      setMetrics({
+        ingresos: data.totals.ingresos,
+        gastos:   data.totals.gastos,
+        saldo:    data.totals.saldo
+      });
+    }
+
+    // Registrar plugin de etiquetas (ya cargado)
+    Chart.register(ChartDataLabels);
+
+    // === Chart mensual (barras)
+    const ctx1 = document.getElementById('chartMonthly').getContext('2d');
+    CHART_MONTHLY?.destroy();
+    CHART_MONTHLY = new Chart(ctx1, {
+      type:'bar',
+      data:{
+        labels: data.monthly.labels,
+        datasets:[
+          { label:'Ingresos', data:data.monthly.income },
+          { label:'Gastos',   data:data.monthly.expense }
+        ]
+      },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{ position:'bottom' },
+          datalabels:{
+            anchor:'end',
+            align:'top',
+            formatter:v=>`S/ ${Number(v).toFixed(0)}`,
+            font:{ weight:'600', size:10 }
+          }
+        },
+        scales:{ y:{ beginAtZero:true } }
+      }
+    });
+
+    // === Chart categorías (pie de gastos)
+    const ctx2 = document.getElementById('chartCategory').getContext('2d');
+    CHART_CATEGORY?.destroy();
+    CHART_CATEGORY = new Chart(ctx2, {
+      type:'pie',
+      data:{ labels:data.categories.labels, datasets:[{ data:data.categories.expense }] },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{ position:'bottom' },
+          datalabels:{
+            formatter:(value, ctx)=>{
+              const arr = ctx.chart.data.datasets[0].data || [];
+              const sum = arr.reduce((a,b)=>a+Number(b||0),0);
+              const pct = sum ? (value/sum*100) : 0;
+              return `${pct.toFixed(1)}%\nS/ ${Number(value).toFixed(2)}`;
+            },
+            color:'#fff',
+            font:{ weight:'600', size:10 }
+          }
+        }
+      }
+    });
+
+    showMsg('msg','success','Panel actualizado.');
+  }
+
+  // ---- Exportar Resumen + Gráficos (sin botones)
+  async function exportarResumenYGraficosPDF(){
+    const el = document.getElementById('pdfArea');
+    el.classList.add('exporting');         // oculta .no-export en la captura
+    await new Promise(r => setTimeout(r, 250)); // tiempo para terminar de renderizar
+
+    const canvas = await html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgW  = pageW - 10;                   // margen pequeño
+    const ratio = imgW / canvas.width;
+    const imgH  = canvas.height * ratio;
+
+    if (imgH <= pageH - 10){
+      pdf.addImage(canvas.toDataURL('image/png'),'PNG',5,5,imgW,imgH);
+    } else {
+      // cortar en varias páginas si es alto
+      let y = 0;
+      while (y < canvas.height){
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width  = canvas.width;
+        pageCanvas.height = Math.min(canvas.height - y, Math.floor((pageH-10) / ratio));
+        const ctx = pageCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, y, pageCanvas.width, pageCanvas.height, 0, 0, pageCanvas.width, pageCanvas.height);
+        if (y>0) pdf.addPage();
+        pdf.addImage(pageCanvas.toDataURL('image/png'),'PNG',5,5,imgW,pageCanvas.height*ratio);
+        y += pageCanvas.height;
+      }
+    }
+    pdf.save('panel_resumen_graficos.pdf');
+    el.classList.remove('exporting');
+  }
+
+  function logout(){ Auth.logout(); window.location.href='/'; }
+
+  // ---- Wire up
+  document.getElementById('btnResumen').onclick      = verResumen;
+  document.getElementById('btnActualizar').onclick   = verInsights;
+  document.getElementById('btnExcel').onclick        = ()=>descargar('xlsx');
+  document.getElementById('btnPDFLista').onclick     = ()=>descargar('pdf');
+  document.getElementById('btnPanelPDF').onclick     = exportarResumenYGraficosPDF;
+
+  // Carga inicial
   setDefaultDates();
   loadFilters();
   verResumen();
+  verInsights();
 </script>
-
 </body>
 </html>
