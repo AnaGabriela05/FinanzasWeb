@@ -1,248 +1,89 @@
 <!doctype html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Presupuestos — Finanzas</title>
-  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
+
 <body>
-<header>
-  <div><a href="/dashboard.html">💸 Finanzas — Presupuestos</a></div>
-  <div class="nav">
-    <a href="/categories.html">Categorías</a>
-    <a href="/payment-methods.html">Métodos de pago</a>
-    <a href="/transactions.html">Transacciones</a>
-    <a href="/budgets.html">Presupuestos</a>
-    <a href="/reports.html">Reportes</a>
-    <button onclick="logout()">Salir</button>
-  </div>
-</header>
-
-<div class="container budget-page">
-  <h1>Presupuestos</h1>
-  <div class="grid">
-    <!-- Formulario -->
-    <div class="card budget-form">
-      <h2>Asignar / Actualizar</h2>
-      <label>Categoría</label>
-      <select id="bCat"></select>
-
-      <label>Monto mensual</label>
-      <input id="bMonto" type="number" step="0.01"/>
-
-      <div class="grid" style="grid-template-columns:1fr 1fr;">
-        <div>
-          <label>Mes</label>
-          <input id="bMes" type="number" min="1" max="12"/>
-        </div>
-        <div>
-          <label>Año</label>
-          <input id="bAnio" type="number" min="2000" max="2100"/>
-        </div>
-      </div>
-
-      <br/>
-      <button class="primary" id="btnSave"  onclick="guardar()">Guardar</button>
-      <button class="secondary" id="btnClear" onclick="limpiar()">Limpiar</button>
-      <div id="msg" class="toast"></div>
+  <header>
+    <div><a href="/dashboard.html">💸 Finanzas — Presupuestos</a></div>
+    <div class="nav">
+      <a href="/categories.html">Categorías</a>
+      <a href="/payment-methods.html">Métodos de pago</a>
+      <a href="/transactions.html">Transacciones</a>
+      <a href="/budgets.html">Presupuestos</a>
+      <a href="/reports.html">Reportes</a>
+      <button onclick="logout()">Salir</button>
     </div>
+  </header>
 
-    <!-- Listado -->
-    <div class="card">
-      <h2>Listado</h2>
-      <div>
-        <label>Filtrar por mes/año</label>
+  <div class="container budget-page">
+    <h1>Presupuestos</h1>
+    <div class="grid">
+      <!-- Formulario -->
+      <div class="card budget-form">
+        <h2>Asignar / Actualizar</h2>
+        <label>Categoría</label>
+        <select id="bCat"></select>
+
+        <label>Monto mensual</label>
+        <input id="bMonto" type="number" step="0.01" />
+
         <div class="grid" style="grid-template-columns:1fr 1fr;">
-          <input id="fMes"  type="number" min="1" max="12"/>
-          <input id="fAnio" type="number" min="2000" max="2100"/>
+          <div>
+            <label>Mes</label>
+            <input id="bMes" type="number" min="1" max="12" />
+          </div>
+          <div>
+            <label>Año</label>
+            <input id="bAnio" type="number" min="2000" max="2100" />
+          </div>
         </div>
-        <br/>
-        <button class="secondary" onclick="cargar()">Buscar</button>
 
+        <br />
+        <button class="primary" id="btnSave" onclick="guardar()">Guardar</button>
+        <button class="secondary" id="btnClear" onclick="limpiar()">Limpiar</button>
+        <div id="msg" class="toast"></div>
       </div>
 
-      <table id="tabla" class="budget-table">
-        <thead>
-          <tr>
-            <th>Categoría</th>
-            <th>Mes/Año</th>
-            <th>Monto</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <!-- Listado -->
+      <div class="card">
+        <h2>Listado</h2>
+        <div>
+          <label>Filtrar por mes/año</label>
+          <div class="grid" style="grid-template-columns:1fr 1fr;">
+            <input id="fMes" type="number" min="1" max="12" />
+            <input id="fAnio" type="number" min="2000" max="2100" />
+          </div>
+          <br />
+          <button class="secondary" onclick="cargar()">Buscar</button>
+
+        </div>
+
+        <table id="tabla" class="budget-table">
+          <thead>
+            <tr>
+              <th>Categoría</th>
+              <th>Mes/Año</th>
+              <th>Monto</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Scripts -->
-<script src="/js/ui.js"></script>
-<script src="/js/auth.js"></script>
-<script src="/js/api.js"></script>
-<script>
-  Auth.protect();
-
-  let editingId = null;        // null = crear; number = editar
-  let BUDGET_MAP = new Map();  // id -> presupuesto
-
-  async function cargarCats(){
-    const cats = await API.get('/api/categories');
-    bCat.innerHTML = cats
-      .map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`)
-      .join('');
-  }
-
-  function setModeCreate(){
-    editingId = null;
-    btnSave.textContent = 'Guardar';
-    bMonto.value = '';
-    bMes.value   = '';
-    bAnio.value  = '';
-  }
-
-  function ensureCategoryOption(catId, catNombre, catTipo){
-    if (!catId) return;
-    const exists = Array.from(bCat.options).some(o => Number(o.value) === Number(catId));
-    if (!exists) {
-      const opt = document.createElement('option');
-      opt.value = String(catId);
-      const tipoTxt = catTipo ? ` (${catTipo})` : '';
-      opt.textContent = `${catNombre || 'Categoría'}${tipoTxt} — no visible`;
-      opt.dataset.temp = 'true';
-      bCat.appendChild(opt);
-    }
-    bCat.value = String(catId);
-  }
-
-  function setModeEdit(b){
-    editingId = b.id;
-    btnSave.textContent = 'Actualizar';
-
-    const catId     = b.category?.id ?? b.categoryId;
-    const catNombre = b.category?.nombre;
-    const catTipo   = b.category?.tipo;
-
-    ensureCategoryOption(catId, catNombre, catTipo);
-
-    bMonto.value = String(Number(b.montoMensual || 0));
-    bMes.value   = String(b.mes);
-    bAnio.value  = String(b.anio);
-
-    showMsg('msg','success','Presupuesto cargado para edición. Modifica y pulsa Actualizar.');
-  }
-
-  function limpiar(){
-    setModeCreate();
-    // elimina opciones temporales (si las hubo)
-    Array.from(bCat.querySelectorAll('option[data-temp="true"]')).forEach(o => o.remove());
-    showMsg('msg','success','Formulario limpiado.');
-  }
-
-  async function cargar(){
-    const q = new URLSearchParams();
-    if (fMes.value)  q.append('mes',  fMes.value);
-    if (fAnio.value) q.append('anio', fAnio.value);
-
-    const budgets = await API.get('/api/budgets' + (q.toString()? '?' + q.toString() : ''));
-    BUDGET_MAP = new Map(budgets.map(b => [b.id, b]));
-
-    const tbody = document.querySelector('#tabla tbody');
-    tbody.innerHTML = budgets.map(b => {
-      const catNombre = (b.category?.nombre || '')
-        .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      const catTipo   = b.category?.tipo ? ` (${b.category.tipo})` : '';
-      const monto     = Number(b.montoMensual).toFixed(2);
-
-      return `
-        <tr>
-          <td>${catNombre}${catTipo}</td>
-          <td>${b.mes}/${b.anio}</td>
-          <td>S/ ${monto}</td>
-          <td class="actions">
-            <button class="btn-icon btn-edit"
-              title="Editar" aria-label="Editar"
-              onclick="editar(${b.id})">
-              <!-- lápiz -->
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9"/>
-                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-              </svg>
-            </button>
-
-            <button class="btn-icon btn-delete"
-              title="Eliminar" aria-label="Eliminar"
-              onclick="eliminar(${b.id})">
-              <!-- papelera -->
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                <path d="M10 11v6M14 11v6"/>
-                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
-              </svg>
-            </button>
-          </td>
-        </tr>`;
-    }).join('') || '<tr><td colspan="4" class="muted">Sin resultados</td></tr>';
-  }
-
-  function editar(id){
-    const b = BUDGET_MAP.get(id);
-    if (!b) return;
-    setModeEdit(b);
-  }
-
-  async function guardar(){
-    try{
-      const payload = {
-        categoryId:   Number(bCat.value),
-        montoMensual: Number(bMonto.value),
-        mes:          Number(bMes.value),
-        anio:         Number(bAnio.value)
-      };
-
-      if (!payload.categoryId || isNaN(payload.montoMensual) || !payload.mes || !payload.anio) {
-        showMsg('msg','error','Completa categoría, monto, mes y año.');
-        return;
-      }
-
-      if (editingId) {
-        if (!askConfirm('¿Seguro de actualizar este presupuesto?')) return;
-        const r = await API.put(`/api/budgets/${editingId}`, payload);
-        showMsg('msg','success', r.message || 'Presupuesto editado correctamente.');
-      } else {
-        const r = await API.post('/api/budgets', payload);
-        showMsg('msg','success', r.message || 'Presupuesto registrado correctamente.');
-      }
-
-      setModeCreate();
-      Array.from(bCat.querySelectorAll('option[data-temp="true"]')).forEach(o => o.remove());
-      await cargar();
-    }catch(e){
-      showMsg('msg','error', formatErr(editingId ? 'editar el presupuesto' : 'guardar el presupuesto', e));
-    }
-  }
-
-  async function eliminar(id){
-    if (!askConfirm('¿Seguro de eliminar este presupuesto?')) return;
-    try{
-      await API.del(`/api/budgets/${id}`);
-      showMsg('msg','success','Se eliminó correctamente.');
-      if (editingId === id) setModeCreate();
-      await cargar();
-    }catch(e){
-      showMsg('msg','error', formatErr('eliminar el presupuesto', e));
-    }
-  }
-
-  function logout(){ Auth.logout(); window.location.href='/' }
-
-  // Inicialización
-  cargarCats().then(setModeCreate);
-  cargar();
-</script>
+  <!-- Scripts -->
+  <script src="/js/ui.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/common.js"></script>
 </body>
+
 </html>

@@ -1,12 +1,13 @@
-
 <!doctype html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Finanzas — Registro</title>
-  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
+
 <body>
   <header>
     <div>💸 Finanzas</div>
@@ -22,14 +23,14 @@
         <input type="email" id="regCorreo" required />
         <label>Contraseña</label>
         <input type="password" id="regPassword" minlength="6" required />
-        <br/>
+        <br />
         <button class="primary" type="submit">Registrarme</button>
-        <p><small>¿Ya tienes cuenta? <a style="color: rgb(0, 81, 255);"href="/">Inicia sesión</a></small></p>
+        <p><small>¿Ya tienes cuenta? <a style="color: rgb(0, 81, 255);" href="/">Inicia sesión</a></small></p>
         <div id="regMsg" class="toast"></div>
       </form>
     </div>
   </div>
- <!-- <footer>
+  <!-- <footer>
    Copyright &copy;
       <script>
         document.write(new Date().getFullYear());
@@ -39,36 +40,9 @@
       <i class="fa fa-heart" aria-hidden="true"></i>
   </footer>-->
   <script src="/js/ui.js"></script>
-<script src="/js/auth.js"></script>  <!-- <- agrega esta línea -->
-<script src="/js/api.js"></script>
-<script>
-  document.getElementById('formRegister').addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const payload = { nombre: regNombre.value.trim(), correo: regCorreo.value.trim(), password: regPassword.value };
-    try {
-      await API.post('/api/auth/register', payload);
-      showMsg('regMsg','success','Usuario registrado correctamente. Ahora inicia sesión.');
-      // Opcional: redirigir después de 1s
-      //setTimeout(()=> window.location.href = "/", 1000);
-    } catch (err) {
-      showMsg('regMsg','error', formatErr('registrar', err));
-    }
-  });
-</script>
-
-<!--  <script src="/js/ui.js"></script>
- <script src="/js/api.js"></script>
-  <script>
-    document.getElementById('formRegister').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const payload = { nombre: regNombre.value.trim(), correo: regCorreo.value.trim(), password: regPassword.value };
-      try {
-        await API.post('/api/auth/register', payload);
-        showMsg('regMsg','success','Usuario registrado correctamente. Ahora inicia sesión.');
-      } catch (err) {
-        showMsg('regMsg','error', formatErr('registrar', err));
-      }
-    });
-  </script>-->
+  <script src="/js/auth.js"></script> <!-- <- agrega esta línea -->
+  <script src="/js/api.js"></script>
+  <script src="/js/common.js"></script>
 </body>
+
 </html>

@@ -69,114 +69,54 @@
     </div>
   </div>
 </div>
+<!-- Modal eliminación / archivado de Método de pago -->
+<div id="pmDelOv" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pmDelTitle">
+    <header>
+      <h2 id="pmDelTitle">Eliminar método de pago</h2>
+      <button onclick="pmCloseDel()" aria-label="Cerrar">✖</button>
+    </header>
+
+    <div>
+      <p style="margin-bottom:10px">
+        <strong id="pmDelName">—</strong>
+      </p>
+
+      <div id="pmDelCounts" class="toast">
+        <p style="margin:0">
+          Este método tiene <strong id="pmDelTxs">0</strong> transacciones asociadas.
+        </p>
+      </div>
+
+      <div class="toast" style="margin-top:8px">
+        <p style="margin:0 0 6px">¿Qué deseas hacer?</p>
+        <ul style="margin-left:18px; color:#4B5563">
+          <li><strong>Eliminar TODO (cascada)</strong>: borra transacciones + el método.</li>
+          <li><strong>Archivar</strong>: marca el método como inactivo y mantiene el historial.</li>
+          <li><strong>Cancelar</strong>: no se realiza ningún cambio.</li>
+        </ul>
+      </div>
+
+      <div id="pmDelNoteNoUse" class="toast hidden" style="margin-top:8px">
+        <small class="muted">Este método no tiene transacciones. Puedes eliminarlo directamente o archivarlo si prefieres.</small>
+      </div>
+
+      <div id="pmDelMsg" class="toast" style="display:none"></div>
+    </div>
+
+    <div class="actions">
+      <button class="secondary" onclick="pmCloseDel()">Cancelar</button>
+      <button class="secondary" id="pmBtnArchive" onclick="pmDoArchive()">Archivar (mantener historial)</button>
+      <button class="primary"   id="pmBtnCascade" onclick="pmDoCascade()">Eliminar TODO (cascada)</button>
+    </div>
+  </div>
+</div>
 
 <!-- Scripts -->
 <script src="/js/ui.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/api.js"></script>
-<script>
-  Auth.protect();
-  let pmId = null;
-  let PM_MAP = new Map();
-
-  function openPm(p){
-    pmId = p.id;
-    pmEditNombre.value = p.nombre || '';
-    pmEditActivo.checked = !!p.activo;
-    pmModalOv.style.display = 'flex';
-  }
-  function closePm(){ pmModalOv.style.display = 'none'; pmId = null; }
-
-  async function cargar(){
-    const list = await API.get('/api/payment-methods');
-    PM_MAP = new Map(list.map(p => [p.id, p]));
-    const tbody = document.querySelector('#tabla tbody');
-
-    tbody.innerHTML = list.map(p => {
-      const safeName = (p.nombre || '')
-        .replace(/&/g,'&amp;')
-        .replace(/"/g,'&quot;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;');
-
-      return `
-        <tr>
-          <td>${safeName}</td>
-          <td>${p.activo ? 'Sí' : 'No'}</td>
-          <td class="actions">
-            <button class="btn-icon btn-edit"
-              title="Editar" aria-label="Editar"
-              onclick='openPm({id:${p.id}, nombre:"${safeName}", activo:${p.activo}})'>
-              <!-- lápiz -->
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9"/>
-                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-              </svg>
-            </button>
-
-            <button class="btn-icon btn-delete"
-              title="Eliminar" aria-label="Eliminar"
-              onclick="eliminar(${p.id})">
-              <!-- papelera -->
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                <path d="M10 11v6M14 11v6"/>
-                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
-              </svg>
-            </button>
-          </td>
-        </tr>`;
-    }).join('');
-  }
-
-  async function crear(){
-    try{
-      const nombre = (pmNombre.value || '').trim();
-      if(!nombre) return showMsg('msg','error','Ingresa un nombre.');
-      await API.post('/api/payment-methods', { nombre });
-      showMsg('msg','success','Método registrado correctamente.');
-      pmNombre.value='';
-      cargar();
-    }catch(e){
-      showMsg('msg','error', formatErr('registrar el método', e));
-    }
-  }
-
-  async function guardarPm(){
-    if(!askConfirm('¿Seguro de editar este método?')) return;
-    try{
-      await API.put(`/api/payment-methods/${pmId}`, {
-        nombre: (pmEditNombre.value || '').trim(),
-        activo: pmEditActivo.checked
-      });
-      showMsg('pmEditMsg','success','Se editó correctamente.');
-      setTimeout(()=>{ closePm(); cargar(); }, 500);
-    }catch(e){
-      showMsg('pmEditMsg','error', formatErr('editar el método', e));
-    }
-  }
-
-  async function eliminar(id){
-    const pm = PM_MAP.get(id) || null;
-    if(!pm) { await cargar(); return; }
-
-    if(!askConfirm('¿Seguro de eliminar este método?')) return;
-    try{
-      await API.del(`/api/payment-methods/${id}`);
-      showMsg('msg','success','Se eliminó correctamente.');
-      cargar();
-    }catch(e){
-      showMsg('msg','error', formatErr('eliminar el método', e));
-    }
-  }
-
-  function logout(){ Auth.logout(); window.location.href='/' }
-
-  cargar();
-</script>
+<script src="/js/common.js"></script>
 
 </body>
 </html>

@@ -1,12 +1,13 @@
-
 <!doctype html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Finanzas — Iniciar sesión</title>
-  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
+
 <body>
   <header>
     <div>💸 Finanzas</div>
@@ -18,15 +19,16 @@
       <form id="formLogin">
         <label>Correo</label>
         <input type="email" id="loginCorreo" required />
-        <br/>
-        <br/>
+        <br />
+        <br />
         <label>Contraseña</label>
         <input type="password" id="loginPassword" required />
-        <br/>
-        <br/>
+        <br />
+        <br />
         <button class="primary" type="submit">Entrar</button>
-        <p><small>¿No tienes cuenta? <a style="color: rgb(0, 81, 255);" href="/register.html">Regístrate aquí</a></small></p>
-        <hr/>
+        <p><small>¿No tienes cuenta? <a style="color: rgb(0, 81, 255);" href="/register.html">Regístrate
+              aquí</a></small></p>
+        <hr />
         <!--<button class="google" type="button" disabled title="Próximamente">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G"/>
           Iniciar sesión con Google
@@ -41,21 +43,6 @@
   <script src="/js/ui.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/api.js"></script>
-  <script>
-    if (Auth.isLoggedIn()) window.location.href = "/dashboard.html";
-    document.getElementById('formLogin').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const correo = loginCorreo.value.trim();
-      const password = loginPassword.value;
-      try {
-        const r = await API.post('/api/auth/login', { correo, password });
-        Auth.saveToken(r.token, r.user);
-        showMsg('loginMsg','success','Inicio de sesión correcto');
-        setTimeout(()=> window.location.href = "/dashboard.html", 400);
-      } catch (err) {
-        showMsg('loginMsg','error', formatErr('iniciar sesión', err));
-      }
-    });
-  </script>
+  <script src="/js/common.js"></script>
 </body>
 </html>

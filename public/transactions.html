@@ -1,244 +1,106 @@
 <!doctype html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Transacciones — Finanzas</title>
-  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
+
 <body>
-<header>
-  <div><a href="/dashboard.html">💸 Finanzas — Transacciones</a></div>
-  <div class="nav">
-    <a href="/categories.html">Categorías</a>
-    <a href="/payment-methods.html">Métodos de pago</a>
-    <a href="/transactions.html">Transacciones</a>
-    <a href="/budgets.html">Presupuestos</a>
-    <a href="/reports.html">Reportes</a>
-    <button onclick="logout()">Salir</button>
-  </div>
-</header>
-
-<div class="container tx-page">
-  <h1>Transacciones</h1>
-
-  <div class="grid">
-    <!-- Formulario -->
-    <div class="card tx-form">
-      <h2>Nueva transacción</h2>
-
-      <label>Fecha</label>
-      <input type="date" id="txFecha" />
-
-      <label>Monto</label>
-      <input type="number" step="0.01" id="txMonto" />
-
-      <label>Detalle</label>
-      <input id="txDesc" />
-
-      <label>Categoría</label>
-      <select id="txCat"></select>
-
-      <label>Método de pago</label>
-      <select id="txPM"></select>
-
-      <br/>
-      <button class="primary" onclick="crear()">Registrar</button>
-      <div id="msg" class="toast"></div>
+  <header>
+    <div><a href="/dashboard.html">💸 Finanzas — Transacciones</a></div>
+    <div class="nav">
+      <a href="/categories.html">Categorías</a>
+      <a href="/payment-methods.html">Métodos de pago</a>
+      <a href="/transactions.html">Transacciones</a>
+      <a href="/budgets.html">Presupuestos</a>
+      <a href="/reports.html">Reportes</a>
+      <button onclick="logout()">Salir</button>
     </div>
+  </header>
 
-    <!-- Listado -->
-    <div class="card">
-      <h2>Listado</h2>
-      <table id="tabla">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Detalle</th>
-            <th>Categoría</th>
-            <th>Método</th>
-            <th>Monto</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-</div>
+  <div class="container tx-page">
+    <h1>Transacciones</h1>
 
-<!-- Modal edición TX -->
-<div id="txModalOv" class="modal-overlay">
-  <div class="modal">
-    <header>
-      <h2>Editar transacción</h2>
-      <button onclick="closeTx()">✖</button>
-    </header>
-    <div>
-      <label>Fecha</label>
-      <input type="date" id="txEditFecha" />
+    <div class="grid">
+      <!-- Formulario -->
+      <div class="card tx-form">
+        <h2>Nueva transacción</h2>
 
-      <label>Monto</label>
-      <input type="number" step="0.01" id="txEditMonto" />
+        <label>Fecha</label>
+        <input type="date" id="txFecha" />
 
-      <label>Descripción</label>
-      <input id="txEditDesc" />
+        <label>Monto</label>
+        <input type="number" step="0.01" id="txMonto" />
 
-      <div id="txEditMsg" class="toast"></div>
-    </div>
-    <div class="actions">
-      <button class="secondary" onclick="closeTx()">Cancelar</button>
-      <button class="primary" onclick="guardarTx()">Guardar cambios</button>
+        <label>Detalle</label>
+        <input id="txDesc" />
+
+        <label>Categoría</label>
+        <select id="txCat"></select>
+
+        <label>Método de pago</label>
+        <select id="txPM"></select>
+
+        <br />
+        <button class="primary" onclick="crear()">Registrar</button>
+        <div id="msg" class="toast"></div>
+      </div>
+
+      <!-- Listado -->
+      <div class="card">
+        <h2>Listado</h2>
+        <table id="tabla">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Detalle</th>
+              <th>Categoría</th>
+              <th>Método</th>
+              <th>Monto</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Scripts -->
-<script src="/js/ui.js"></script>
-<script src="/js/auth.js"></script>
-<script src="/js/api.js"></script>
-<script>
-  Auth.protect();
+  <!-- Modal edición TX -->
+  <div id="txModalOv" class="modal-overlay">
+    <div class="modal">
+      <header>
+        <h2>Editar transacción</h2>
+        <button onclick="closeTx()">✖</button>
+      </header>
+      <div>
+        <label>Fecha</label>
+        <input type="date" id="txEditFecha" />
 
-  let txId = null;
+        <label>Monto</label>
+        <input type="number" step="0.01" id="txEditMonto" />
 
-  function setDefaultDates(){
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    // yyyy-mm-dd
-    const yyyy = start.getFullYear();
-    const mm = String(start.getMonth()+1).padStart(2,'0');
-    const dd = String(start.getDate()).padStart(2,'0');
-    txFecha.value = `${yyyy}-${mm}-${dd}`;
-  }
+        <label>Descripción</label>
+        <input id="txEditDesc" />
 
-  async function cargarCats(){
-    const cats = await API.get('/api/categories');
-    txCat.innerHTML = cats
-      .map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`)
-      .join('');
-  }
+        <div id="txEditMsg" class="toast"></div>
+      </div>
+      <div class="actions">
+        <button class="secondary" onclick="closeTx()">Cancelar</button>
+        <button class="primary" onclick="guardarTx()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
 
-  async function cargarPMs(){
-    const list = await API.get('/api/payment-methods');
-    txPM.innerHTML = list.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
-  }
-
-  async function cargar(){
-    const txs = await API.get('/api/transactions');
-    const tbody = document.querySelector('#tabla tbody');
-
-    tbody.innerHTML = txs.map(t => {
-      // Escapar el detalle para HTML
-      const safeDesc = (t.descripcion || '')
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-
-      return `
-        <tr>
-          <td>${t.fecha}</td>
-          <td>${safeDesc}</td>
-          <td><span class="badge">${t.category?.nombre || ''}</span></td>
-          <td>${t.paymentMethod?.nombre || ''}</td>
-          <td>S/ ${Number(t.monto).toFixed(2)}</td>
-          <td class="actions">
-            <button class="btn-icon btn-edit"
-              title="Editar" aria-label="Editar"
-              onclick='openTx({id:${t.id}, fecha:"${t.fecha}", monto:${Number(t.monto)}, descripcion:"${safeDesc}"})'>
-              <!-- lápiz -->
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9"/>
-                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-              </svg>
-            </button>
-
-            <button class="btn-icon btn-delete"
-              title="Eliminar" aria-label="Eliminar"
-              onclick="eliminar(${t.id})">
-              <!-- papelera -->
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                <path d="M10 11v6M14 11v6"/>
-                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
-              </svg>
-            </button>
-          </td>
-        </tr>`;
-    }).join('');
-  }
-
-  function openTx(tx){
-    txId = tx.id;
-    txEditFecha.value = tx.fecha;
-    txEditMonto.value = tx.monto;
-    txEditDesc.value = tx.descripcion;
-    txModalOv.style.display = 'flex';
-  }
-
-  function closeTx(){
-    txModalOv.style.display = 'none';
-    txId = null;
-  }
-
-  async function guardarTx(){
-    if(!askConfirm('¿Seguro de editar esta transacción?')) return;
-    try {
-      await API.put(`/api/transactions/${txId}`, {
-        fecha: txEditFecha.value,
-        monto: Number(txEditMonto.value),
-        descripcion: txEditDesc.value
-      });
-      showMsg('txEditMsg','success','Se editó correctamente.');
-      setTimeout(() => { closeTx(); cargar(); }, 500);
-    } catch(e) {
-      showMsg('txEditMsg','error', formatErr('editar la transacción', e));
-    }
-  }
-
-  async function crear(){
-    try{
-      const payload = {
-        fecha: txFecha.value,
-        monto: Number(txMonto.value),
-        descripcion: txDesc.value,
-        categoryId: Number(txCat.value),
-        paymentMethodId: Number(txPM.value)
-      };
-      await API.post('/api/transactions', payload);
-      showMsg('msg','success','Transacción registrada correctamente.');
-      await cargar();
-    }catch(e){
-      showMsg('msg','error', formatErr('registrar la transacción', e));
-    }
-  }
-
-  async function eliminar(id){
-    if(!askConfirm('¿Seguro de eliminar esta transacción?')) return;
-    try{
-      await API.del(`/api/transactions/${id}`);
-      showMsg('msg','success','Se eliminó correctamente.');
-      cargar();
-    }catch(e){
-      showMsg('msg','error', formatErr('eliminar la transacción', e));
-    }
-  }
-
-  function logout(){
-    Auth.logout();
-    window.location.href = '/';
-  }
-
-  // Init
-  cargarCats();
-  cargarPMs();
-  cargar();
-  setDefaultDates();
-</script>
-
+  <!-- Scripts -->
+  <script src="/js/ui.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/common.js"></script>
 </body>
+
 </html>
