@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Reportes — Finanzas</title>
   <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
 </head>
 
 <body>
@@ -43,10 +45,10 @@
 
         <!-- Toolbar de acciones (un solo lugar) -->
         <div class="toolbar">
-          <button class="secondary" id="btnResumen">Ver resumen</button>
-          <button class="secondary" id="btnActualizar">Actualizar panel</button>
-          <button class="primary" id="btnExcel">Descargar Excel</button>
-          <button class="primary" id="btnPDFLista">Descargar PDF (lista)</button>
+          <button type="button" class="secondary" id="btnResumen">Ver resumen</button>
+          <button type="button" class="secondary" id="btnActualizar">Actualizar panel</button>
+          <button type="button" class="primary" id="btnExcel">Descargar Excel</button>
+          <button type="button" class="primary" id="btnPDFLista">Descargar PDF (lista)</button>
         </div>
 
         <div id="msg" class="toast"></div>

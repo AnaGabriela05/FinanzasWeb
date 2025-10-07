@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.use(auth);
 router.post('/', controller.create);
+router.get('/listadoTotal', controller.listadoTotal);
 router.get('/', controller.list);
 router.get('/:id/usage', controller.usage);  //NUEVO
 router.put('/:id', controller.update);

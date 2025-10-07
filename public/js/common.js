@@ -1,10 +1,120 @@
-/* /js/app.js — centraliza la lógica de todas las páginas */
 (() => {
   'use strict';
 
   // ---------- Utils compartidos ----------
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+  const VARIANTS = {
+    info: { icon: 'M12 9v4m0 4h.01', ring: '#4F6DD8' },
+    warning: { icon: 'M12 9v4m0 4h.01', ring: '#FFB703' },
+    danger: { icon: 'M12 8v4m0 4h.01', ring: '#eb6161' },
+  };
+  function el(html) { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; }
+
+  // ---------- Modal de confirmación reutilizable ----------
+  let $overlay;
+  function ensureDOM() {
+    if ($overlay) return $overlay;
+    $overlay = el(`
+      <div class="modal-overlay" data-confirm-overlay style="display:none">
+        <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="cfmTitle" aria-describedby="cfmMsg">
+          <header class="confirm-header">
+            <div class="confirm-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg></div>
+            <h2 id="cfmTitle">Confirmar</h2>
+          </header>
+          <div id="cfmMsg" class="confirm-msg"></div>
+          <div class="actions confirm-actions">
+            <button class="secondary btn-cancel" type="button">Cancelar</button>
+            <button class="primary btn-accept"  type="button">Aceptar</button>
+          </div>
+        </div>
+      </div>
+    `);
+    document.body.appendChild($overlay);
+    return $overlay;
+  }
+
+  function trapFocus(scope) {
+    const focusables = scope.querySelectorAll('button,a,[tabindex]:not([tabindex="-1"]),input,select,textarea');
+    if (!focusables.length) return () => { };
+    const first = focusables[0], last = focusables[focusables.length - 1];
+    function onKey(e) {
+      if (e.key === 'Escape') { scope.dispatchEvent(new CustomEvent('cfm:cancel')); }
+      if (e.key === 'Enter') { scope.dispatchEvent(new CustomEvent('cfm:accept')); }
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    scope.addEventListener('keydown', onKey);
+    return () => scope.removeEventListener('keydown', onKey);
+  }
+
+  async function open(opts = {}) {
+    const {
+      title = '¿Confirmar?',
+      message = '¿Deseas continuar?',
+      confirmText = 'Sí, continuar',
+      cancelText = 'Cancelar',
+      variant = 'warning' // 'info' | 'warning' | 'danger'
+    } = opts;
+
+    ensureDOM();
+    const overlay = $overlay;
+    const modal = overlay.querySelector('.confirm-modal');
+    const btnOk = overlay.querySelector('.btn-accept');
+    const btnNo = overlay.querySelector('.btn-cancel');
+    const iconBox = overlay.querySelector('.confirm-icon svg');
+
+    // Texto
+    overlay.querySelector('#cfmTitle').textContent = title;
+    overlay.querySelector('#cfmMsg').innerHTML = typeof message === 'string' ? message : '';
+    btnOk.textContent = confirmText;
+    btnNo.textContent = cancelText;
+
+    // Variante
+    modal.classList.remove('v-info', 'v-warning', 'v-danger');
+    modal.classList.add(`v-${variant}`);
+    const { icon, ring } = VARIANTS[variant] || VARIANTS.info;
+    iconBox.innerHTML = `<circle cx="12" cy="12" r="10"></circle><path d="${icon}"></path>`;
+    iconBox.querySelector('circle').setAttribute('stroke', ring);
+    iconBox.querySelector('path').setAttribute('stroke', ring);
+
+    // Botón "peligro"
+    btnOk.classList.remove('btn-danger');
+    if (variant === 'danger') btnOk.classList.add('btn-danger');
+
+    // Mostrar
+    overlay.style.display = 'flex';
+    const untrap = trapFocus(modal);
+    btnOk.focus();
+
+    const result = await new Promise(resolve => {
+      const accept = () => { cleanup(); resolve(true); };
+      const cancel = () => { cleanup(); resolve(false); };
+      const cleanup = () => {
+        overlay.style.display = 'none';
+        overlay.removeEventListener('click', onBackdrop);
+        modal.removeEventListener('cfm:accept', accept);
+        modal.removeEventListener('cfm:cancel', cancel);
+        btnOk.removeEventListener('click', accept);
+        btnNo.removeEventListener('click', cancel);
+        untrap();
+      };
+      const onBackdrop = (e) => { if (e.target === overlay) cancel(); };
+
+      overlay.addEventListener('click', onBackdrop);
+      modal.addEventListener('cfm:accept', accept);
+      modal.addEventListener('cfm:cancel', cancel);
+      btnOk.addEventListener('click', accept);
+      btnNo.addEventListener('click', cancel);
+    });
+
+    return result;
+  }
+
+  // API pública confirm
+  window.Confirm = { open };
+  window.askConfirm = (text, extra = {}) => open({ message: text, ...extra });
 
   const escapeHTML = (s = '') =>
     String(s)
@@ -12,10 +122,11 @@
       .replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   const money = n => 'S/ ' + Number(n || 0).toFixed(2);
+
   // === Login con bloqueo temporal (423 Locked) ===
   function initLoginPage() {
     const form = document.getElementById('formLogin');
-    if (!form) return;                  // ← si no es la página de login, no hace nada
+    if (!form) return;
 
     const btn = form.querySelector('button[type="submit"]');
     const email = document.getElementById('loginCorreo');
@@ -97,7 +208,6 @@
       }
     }
 
-    // Si ya estaba logueado, reenvía
     if (Auth.isLoggedIn?.()) return (location.href = '/dashboard.html');
 
     form.addEventListener('submit', onSubmit);
@@ -108,7 +218,6 @@
   // Arranque global
   document.addEventListener('DOMContentLoaded', () => {
     initLoginPage();
-    // aquí también llamas a initTransactionsPage(), initBudgetsPage(), etc.
   });
 
   function setDefaultMonthRange(fromInput, toInput) {
@@ -129,7 +238,6 @@
 
   // ---------- Arranque por página ----------
   document.addEventListener('DOMContentLoaded', () => {
-    // Login o registro no requieren Auth.protect()
     const isLogin = !!$('#formLogin');
     const isRegister = !!$('#formRegister');
 
@@ -147,7 +255,6 @@
     if ($('#bCat')) initBudgets();
     if ($('#chartMonthly') || $('#resumenCards')) initReports();
 
-    // Logout global
     window.logout = () => { Auth.logout(); window.location.href = '/'; };
   });
 
@@ -215,13 +322,13 @@
     let currentId = null;
     let CAT_MAP = new Map();
 
-    // --- Helpers para el modal de eliminar/archivar ---
+    // Estado para el modal de eliminación/archivado
     let CAT_DEL_ID = null;
 
     async function getCategoryUsage(id) {
       try {
-        // Backend: GET /api/categories/:id/stats -> { txCount, budgetCount }
-        return await API.get(`/api/categories/${id}/stats`);
+        // Endpoint correcto: /usage
+        return await API.get(`/api/categories/${id}/usage`);
       } catch {
         return { txCount: 0, budgetCount: 0 };
       }
@@ -235,7 +342,7 @@
     }
     toggleGlobalBox();
 
-    // ——— Modal de edición (ya lo tenías) ———
+    // Modal de edición
     window.openModal = (cat) => {
       currentId = cat.id;
       $('#editNombre').value = cat.nombre || '';
@@ -247,10 +354,7 @@
       const chk = $('#editGlobal');
       if (chk) chk.checked = !!cat.global;
 
-      // ---- NUEVO: ACTIVO (archivar/restaurar) ----
-      // Puede togglear "activo" si:
-      //  - es admin y la categoría es global, o
-      //  - la categoría es personal (propietario actual)
+      // Toggle Activo (archivar/restaurar)
       const canToggleActivo = (isAdmin && cat.global) || !cat.global;
       const boxActivo = $('#editActivoBox');
       if (boxActivo) boxActivo.classList.toggle('hidden', !canToggleActivo);
@@ -262,22 +366,21 @@
     window.closeModal = () => { $('#modalOv').style.display = 'none'; currentId = null; };
 
     window.guardarEdicion = async () => {
-      if (!askConfirm('¿Seguro de editar esta categoría?')) return;
+      const ok = await askConfirm('¿Seguro de editar esta categoría?', { variant: 'warning' });
+      if (!ok) return;
+
       const payload = {
         nombre: $('#editNombre')?.value.trim(),
         tipo: $('#editTipo')?.value
       };
-      // si eres admin puedes tocar 'global'
       if (Auth.user()?.role === 'admin') payload.global = $('#editGlobal')?.checked;
 
-      // si el toggle "Activo" está visible, lo enviamos
       const activoBoxVisible = !$('#editActivoBox')?.classList.contains('hidden');
       if (activoBoxVisible) payload.activo = $('#editActivo')?.checked;
 
       try {
         const resp = await API.put(`/api/categories/${currentId}`, payload);
-        const msg = resp?.personalized ? 'Se creó tu versión personal con los cambios.'
-          : 'Se editó correctamente.';
+        const msg = resp?.personalized ? 'Se creó tu versión personal con los cambios.' : 'Se editó correctamente.';
         showMsg('editMsg', 'success', msg);
         setTimeout(() => { window.closeModal(); cargar(); }, 400);
       } catch (e) {
@@ -285,7 +388,7 @@
       }
     };
 
-    // ——— Modal de eliminación/archivo con 3 caminos ———
+    // Modal de eliminación/archivo con 3 caminos
     async function openCatDeleteModal(id) {
       const cat = CAT_MAP.get(id);
       if (!cat) { await cargar(); return; }
@@ -295,7 +398,6 @@
       const txs = Number(stats.txCount || 0);
       const buds = Number(stats.budgetCount || 0);
 
-      // Relleno de datos
       $('#catDelName').textContent = cat.nombre || '—';
       $('#catDelTipo').textContent = cat.tipo || '—';
       $('#catDelTx').textContent = String(txs);
@@ -306,13 +408,11 @@
       const scopeTxt = cat.global ? (isAdmin ? 'Global (admin)' : 'Global') : 'Personal';
       $('#catDelScope').textContent = scopeTxt;
 
-      // Permisos botón "Eliminar TODO"
       const canHardDelete = (!cat.global) || isAdmin;
       const delBtn = $('#btnDelAll');
       delBtn.disabled = !canHardDelete;
       delBtn.title = canHardDelete ? '' : 'Solo el dueño (personal) o un admin (global) puede eliminar definitivamente';
 
-      // Texto botón archivar/restaurar/ocultar
       const archBtn = $('#btnArchive');
       archBtn.textContent = (cat.global && !isAdmin)
         ? 'Ocultar (mantener historial)'
@@ -323,10 +423,15 @@
     }
     window.closeCatDelete = () => { $('#catDeleteOv').style.display = 'none'; CAT_DEL_ID = null; };
 
-    // Botón "Eliminar TODO"
+    // Eliminar TODO (cascada)
     window.deleteCategoryAll = async () => {
       if (!CAT_DEL_ID) return;
-      if (!askConfirm('Se eliminarán la categoría y TODO su historial (transacciones y presupuestos). ¿Continuar?')) return;
+      const ok = await askConfirm(
+        'Se eliminarán la categoría y TODO su historial (transacciones y presupuestos). ¿Continuar?',
+        { variant: 'danger', confirmText: 'Sí, eliminar' }
+      );
+      if (!ok) return;
+
       try {
         await API.del(`/api/categories/${CAT_DEL_ID}?cascade=1`);
         showMsg('msg', 'success', 'Categoría e historial eliminados.');
@@ -338,18 +443,26 @@
       }
     };
 
-    // Botón "Archivar / Restaurar / Ocultar"
+    // Archivar / Restaurar / Ocultar
     window.archiveCategory = async () => {
       if (!CAT_DEL_ID) return;
       const cat = CAT_MAP.get(CAT_DEL_ID); if (!cat) return;
       const isAdmin = (Auth.user()?.role === 'admin');
+
+      // confirmación previa
+      const ok = await askConfirm(
+        (cat.global && !isAdmin)
+          ? 'Se ocultará la categoría global solo para ti (se mantiene el historial). ¿Continuar?'
+          : (cat.activo === false ? '¿Restaurar la categoría?' : '¿Archivar la categoría? El historial se mantiene.'),
+        { variant: 'warning' }
+      );
+      if (!ok) return;
+
       try {
         if (cat.global && !isAdmin) {
-          // No-admin sobre global: ocultar solo para este usuario
           await API.del(`/api/categories/${CAT_DEL_ID}`);
           showMsg('msg', 'success', 'Categoría global ocultada para ti. El historial se mantiene.');
         } else {
-          // Archivar/restaurar (toggle activo)
           const nuevoActivo = (cat.activo === false); // si estaba archivada → restaurar
           await API.put(`/api/categories/${CAT_DEL_ID}`, { activo: nuevoActivo });
           showMsg('msg', 'success', nuevoActivo ? 'Categoría restaurada.' : 'Categoría archivada. El historial se mantiene.');
@@ -365,13 +478,11 @@
     // Eliminar (abre modal con las 3 opciones)
     window.eliminar = async (id) => { await openCatDeleteModal(id); };
 
-    // ——— Listado ———
+    // Listado
     async function cargar() {
       toggleGlobalBox();
-
-      // ¿incluir archivadas?
       const includeArchived = $('#verArchivadas')?.checked ? '?includeArchived=1' : '';
-      const cats = await API.get('/api/categories' + includeArchived);
+      const cats = await API.get('/api/categories/listadoTotal');
 
       CAT_MAP = new Map(cats.map(c => [c.id, c]));
       const tbody = $('#tabla tbody');
@@ -403,9 +514,7 @@
       }).join('');
     }
 
-    // refresca al cambiar el filtro de archivadas (si lo agregaste)
     $('#verArchivadas')?.addEventListener('change', cargar);
-
     window.cargar = cargar;
 
     // Crear
@@ -433,15 +542,21 @@
     let pmId = null;
     let PM_MAP = new Map();
 
+    // Estado para modales de borrado/archivo
     let PM_DEL_ID = null;
     let PM_DEL_NAME = '';
+    let PM_PENDING_ACTION = null; // 'archive' | 'cascade'
+    let PM_LAST_COUNTS = { txCount: 0 };
+    let PM_IS_ARCHIVED = false; // 👈 nuevo
 
+
+    // Helpers
     async function getPaymentMethodUsage(id) {
       try { return await API.get(`/api/payment-methods/${id}/usage`); }
       catch { return { txCount: 0 }; }
     }
 
-
+    // Modal edición
     window.openPm = (p) => {
       pmId = p.id;
       $('#pmEditNombre').value = p.nombre || '';
@@ -450,35 +565,38 @@
     };
     window.closePm = () => { $('#pmModalOv').style.display = 'none'; pmId = null; };
 
+    // Cargar tabla
     async function cargar() {
-      const list = await API.get('/api/payment-methods');
-      PM_MAP = new Map(list.map(p => [p.id, p]));
+      const listadoTotal = await API.get('/api/payment-methods/listadoTotal');
+      PM_MAP = new Map(listadoTotal.map(p => [p.id, p]));
       const tbody = $('#tabla tbody');
-      tbody.innerHTML = list.map(p => {
+      tbody.innerHTML = listadoTotal.map(p => {
         const safe = escapeHTML(p.nombre || '');
         return `
-          <tr>
-            <td>${safe}</td>
-            <td>${p.activo ? 'Sí' : 'No'}</td>
-            <td class="actions">
-              <button class="btn-icon btn-edit" title="Editar" aria-label="Editar"
-                onclick='openPm({id:${p.id}, nombre:"${safe}", activo:${p.activo}})'>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                </svg>
-              </button>
-              <button class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar" onclick="pmAskDelete(${p.id})">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
-                </svg>
-              </button>
-            </td>
-          </tr>`;
+        <tr>
+          <td>${safe}</td>
+          <td>${p.activo ? 'Sí' : 'No'}</td>
+          <td class="actions">
+            <button class="btn-icon btn-edit" title="Editar" aria-label="Editar"
+              onclick='openPm({id:${p.id}, nombre:"${safe}", activo:${p.activo}})'>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </button>
+            <button class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar" onclick="pmAskDelete(${p.id})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          </td>
+        </tr>`;
       }).join('');
     }
     window.cargar = cargar;
 
+
+    // Crear
     window.crear = async () => {
       try {
         const nombre = ($('#pmNombre')?.value || '').trim();
@@ -492,8 +610,11 @@
       }
     };
 
+    // Guardar edición (con confirm)
     window.guardarPm = async () => {
-      if (!askConfirm('¿Seguro de editar este método?')) return;
+      const ok = await askConfirm('¿Seguro de editar este método?', { variant: 'warning' });
+      if (!ok) return;
+
       try {
         await API.put(`/api/payment-methods/${pmId}`, {
           nombre: ($('#pmEditNombre')?.value || '').trim(),
@@ -505,125 +626,105 @@
         showMsg('pmEditMsg', 'error', formatErr('editar el método', e));
       }
     };
+
+    // Flujo de eliminación/archivado con dos modales
     window.pmAskDelete = async (id) => {
       const pm = PM_MAP.get(id);
       if (!pm) { await cargar(); return; }
 
       PM_DEL_ID = id;
       PM_DEL_NAME = pm.nombre || '';
+      PM_IS_ARCHIVED = !pm.activo;
 
-      // 1) Cargar conteos
       const u = await getPaymentMethodUsage(id);
-      const txs = Number(u.txCount || 0);
+      PM_LAST_COUNTS = { txCount: Number(u.txCount || 0) };
 
-      // 2) Pintar datos
       $('#pmDelName').textContent = PM_DEL_NAME;
-      $('#pmDelTxs').textContent = String(txs);
+      $('#pmDelTxs').textContent = String(PM_LAST_COUNTS.txCount);
+      $('#pmDelNoteNoUse')?.classList.toggle('hidden', PM_LAST_COUNTS.txCount > 0);
+      // cambia el texto del botón según estado
+      const actBtn = document.getElementById('pmActBtn');
+      if (actBtn) actBtn.textContent = PM_IS_ARCHIVED ? 'Restaurar' : 'Archivar (mantener historial)';
 
-      // Nota si no hay uso
-      $('#pmDelNoteNoUse')?.classList.toggle('hidden', txs > 0);
-
-      // 3) Mostrar modal
-      $('#pmDelMsg').style.display = 'none';
       $('#pmDelOv').style.display = 'flex';
     };
 
     window.pmCloseDel = () => {
       PM_DEL_ID = null;
       PM_DEL_NAME = '';
+      PM_PENDING_ACTION = null;
       $('#pmDelOv').style.display = 'none';
     };
 
-    // Deshabilita/rehabilita botones mientras procesa
-    function pmSetBusy(v) {
-      $('#pmBtnArchive').disabled = v;
-      $('#pmBtnCascade').disabled = v;
+    window.pmConfirm = (action /* 'archive' | 'cascade' */) => {
+      if (!PM_DEL_ID) return;
+      PM_PENDING_ACTION = action;
+
+      const name = escapeHTML(PM_DEL_NAME);
+      const txs = PM_LAST_COUNTS.txCount;
+      let title = '';
+      let body = '';
+
+      if (action === 'archive') {
+        if (PM_IS_ARCHIVED) {
+          PM_PENDING_ACTION = 'restore'; // restaurar
+          title = 'Confirmar restauración';
+          body = `Vas a <strong>restaurar</strong> el método <strong>${name}</strong>. 
+               Seguirá mostrando su historial (${txs} transacciones). ¿Deseas continuar?`;
+        } else {
+          PM_PENDING_ACTION = 'archive'; // archivar
+          title = 'Confirmar archivado';
+          body = `Vas a <strong>archivar</strong> el método <strong>${name}</strong>. 
+               Se mantendrá el historial (${txs} transacciones). ¿Deseas continuar?`;
+        }
+      } else {
+        title = 'Confirmar eliminación total';
+        body = `Vas a <strong>eliminar TODO</strong> para el método <strong>${name}</strong>. 
+                 Esto borrará definitivamente ${txs} transacciones asociadas y el método. ¿Deseas continuar?`;
+      }
+
+      $('#pmConfirmTitle').innerHTML = title;
+      $('#pmConfirmBody').innerHTML = body;
+      $('#pmConfirmMsg').style.display = 'none';
+
+      $('#pmDelOv').style.display = 'none';
+      $('#pmConfirmOv').style.display = 'flex';
+    };
+
+    window.pmCloseConfirm = () => {
+      $('#pmConfirmOv').style.display = 'none';
+    };
+
+    function pmSetConfirmBusy(v) {
+      $('#pmConfirmOk').disabled = v;
     }
 
-    window.pmDoArchive = async () => {
-      if (!PM_DEL_ID) return;
+    window.pmDoConfirm = async () => {
+      if (!PM_DEL_ID || !PM_PENDING_ACTION) return;
       try {
-        pmSetBusy(true);
-        await API.del(`/api/payment-methods/${PM_DEL_ID}?archive=1`);
-        showMsg('msg', 'success', 'Método archivado. El historial se mantiene.');
+        pmSetConfirmBusy(true);
+        if (PM_PENDING_ACTION === 'restore') {
+          await API.put(`/api/payment-methods/${PM_DEL_ID}`, { activo: true });      // RESTAURAR
+          showMsg('msg', 'success', 'Método restaurado.');
+        } else if (PM_PENDING_ACTION === 'archive') {
+          await API.del(`/api/payment-methods/${PM_DEL_ID}?archive=1`);              // ARCHIVAR
+          showMsg('msg', 'success', 'Método archivado. El historial se mantiene.');
+        } else {
+          await API.del(`/api/payment-methods/${PM_DEL_ID}?cascade=1`);              // ELIMINAR TODO
+          showMsg('msg', 'success', 'Método y transacciones relacionadas eliminadas.');
+        }
+        pmSetConfirmBusy(false);
+        pmCloseConfirm();
         pmCloseDel();
         cargar();
       } catch (e) {
-        pmSetBusy(false);
-        showMsg('pmDelMsg', 'error', formatErr('archivar el método', e));
-        $('#pmDelMsg').style.display = 'block';
-      }
-    };
-
-    window.pmDoCascade = async () => {
-      if (!PM_DEL_ID) return;
-      try {
-        pmSetBusy(true);
-        await API.del(`/api/payment-methods/${PM_DEL_ID}?cascade=1`);
-        showMsg('msg', 'success', 'Método y transacciones relacionadas eliminadas.');
-        pmCloseDel();
-        cargar();
-      } catch (e) {
-        pmSetBusy(false);
-        // Si el backend devolviera 409 por alguna razón tardía, lo tratamos igual:
+        pmSetConfirmBusy(false);
         if (e?.status === 409 && e?.data?.txCount >= 0) {
-          // Podrías re-abrir el flujo según e.data.txCount, pero aquí basta con mostrar mensaje:
-          showMsg('pmDelMsg', 'error', e?.data?.message || 'Método en uso. Elige acción.');
-          $('#pmDelMsg').style.display = 'block';
+          $('#pmConfirmMsg').style.display = 'block';
+          showMsg('pmConfirmMsg', 'error', e?.data?.message || 'Método en uso. Elige una acción válida.');
         } else {
-          showMsg('pmDelMsg', 'error', formatErr('eliminar el método', e));
-          $('#pmDelMsg').style.display = 'block';
-        }
-      }
-    };
-
-    window.eliminar = async (id) => {
-      const pm = PM_MAP.get(id) || null;
-      if (!pm) { await cargar(); return; }
-
-      try {
-        const u = await getPaymentMethodUsage(id);
-        const txs = Number(u.txCount || 0);
-
-        if (txs > 0) {
-          // Opción rápida con confirm (Aceptar=cascade, Cancelar=archivar)
-          const msg =
-            `Este método tiene ${txs} transacciones.\n\n` +
-            `¿Qué deseas hacer?\n` +
-            `Aceptar: Eliminar TODO (cascada)\n` +
-            `Cancelar: Archivar (mantener historial)`;
-          if (confirm(msg)) {
-            await API.del(`/api/payment-methods/${id}?cascade=1`);
-            showMsg('msg', 'success', 'Método y transacciones relacionadas eliminadas.');
-          } else {
-            await API.del(`/api/payment-methods/${id}?archive=1`);
-            showMsg('msg', 'success', 'Método archivado. El historial se mantiene.');
-          }
-        } else {
-          if (!askConfirm('¿Seguro de eliminar este método?')) return;
-          await API.del(`/api/payment-methods/${id}`);
-          showMsg('msg', 'success', 'Método eliminado.');
-        }
-
-        cargar();
-      } catch (e) {
-        if (e?.status === 409 && e?.data) {
-          const txs = Number(e.data.txCount || 0);
-          const msg =
-            `El método tiene ${txs} transacciones.\n\n` +
-            `¿Eliminar TODO (cascada)?\n` +
-            `Aceptar: cascada\n` +
-            `Cancelar: archivar`;
-          if (confirm(msg)) {
-            await API.del(`/api/payment-methods/${id}?cascade=1`);
-            showMsg('msg', 'success', 'Método y transacciones relacionadas eliminadas.');
-          } else {
-            await API.del(`/api/payment-methods/${id}?archive=1`);
-            showMsg('msg', 'success', 'Método archivado. El historial se mantiene.');
-          }
-          cargar();
-        } else {
-          showMsg('msg', 'error', formatErr('eliminar el método', e));
+          $('#pmConfirmMsg').style.display = 'block';
+          showMsg('pmConfirmMsg', 'error', formatErr('procesar la acción', e));
         }
       }
     };
@@ -694,7 +795,9 @@
     window.closeTx = () => { $('#txModalOv').style.display = 'none'; txId = null; };
 
     window.guardarTx = async () => {
-      if (!askConfirm('¿Seguro de editar esta transacción?')) return;
+      const ok = await askConfirm('¿Seguro de editar esta transacción?', { variant: 'warning' });
+      if (!ok) return;
+
       try {
         await API.put(`/api/transactions/${txId}`, {
           fecha: $('#txEditFecha').value,
@@ -732,7 +835,9 @@
     };
 
     window.eliminar = async (id) => {
-      if (!askConfirm('¿Seguro de eliminar esta transacción?')) return;
+      const ok = await askConfirm('¿Seguro de eliminar esta transacción?', { variant: 'danger', confirmText: 'Sí, eliminar' });
+      if (!ok) return;
+
       try {
         await API.del(`/api/transactions/${id}`);
         showMsg('msg', 'success', 'Se eliminó correctamente.');
@@ -851,7 +956,8 @@
           return;
         }
         if (editingId) {
-          if (!askConfirm('¿Seguro de actualizar este presupuesto?')) return;
+          const ok = await askConfirm('¿Seguro de actualizar este presupuesto?', { variant: 'warning' });
+          if (!ok) return;
           const r = await API.put(`/api/budgets/${editingId}`, payload);
           showMsg('msg', 'success', r.message || 'Presupuesto editado correctamente.');
         } else {
@@ -867,7 +973,9 @@
     };
 
     window.eliminar = async (id) => {
-      if (!askConfirm('¿Seguro de eliminar este presupuesto?')) return;
+      const ok = await askConfirm('¿Seguro de eliminar este presupuesto?', { variant: 'danger', confirmText: 'Sí, eliminar' });
+      if (!ok) return;
+
       try {
         await API.del(`/api/budgets/${id}`);
         showMsg('msg', 'success', 'Se eliminó correctamente.');
@@ -885,7 +993,6 @@
 
   // ---------- REPORTES ----------
   function initReports() {
-    // helpers de métricas
     function setMetrics({ ingresos = 0, gastos = 0, saldo = 0, count = null }) {
       $('#mIngresos').textContent = money(ingresos);
       $('#mGastos').textContent = money(gastos);
@@ -899,13 +1006,13 @@
 
     async function loadFilters() {
       try {
-        const cats = await API.get('/api/categories');
+        const cats = await API.get('/api/categories/listadoTotal');
         const catsSorted = [...cats].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
         $('#fCat').innerHTML =
           '<option value="">(Todas)</option>' +
           catsSorted.map(c => `<option value="${c.id}">${escapeHTML(c.nombre)} (${c.tipo || '—'})</option>`).join('');
 
-        const pm = await API.get('/api/payment-methods');
+        const pm = await API.get('/api/payment-methods/listadoTotal');
         const pmSorted = [...pm].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
         $('#fPM').innerHTML =
           '<option value="">(Todos)</option>' +
@@ -964,7 +1071,6 @@
       }
     }
 
-    // Charts
     let CHART_MONTHLY, CHART_CATEGORY;
 
     async function verInsights() {
@@ -1040,7 +1146,6 @@
       showMsg('msg', 'success', 'Panel actualizado.');
     }
 
-    // Wire-up botones si existen
     $('#btnResumen')?.addEventListener('click', verResumen);
     $('#btnActualizar')?.addEventListener('click', verInsights);
     $('#btnExcel')?.addEventListener('click', () => descargar('xlsx'));

@@ -70,7 +70,7 @@
     <div class="modal">
       <header>
         <h2>Editar categoría</h2>
-        <button onclick="closeModal()">✖</button>
+        <button onclick="closeModal()">sadasdas</button>
       </header>
 
       <div>
@@ -94,8 +94,8 @@
         <div id="editMsg" class="toast"></div>
       </div>
       <div class="actions">
-        <button class="secondary" onclick="closeModal()">Cancelar</button>
-        <button class="primary" onclick="guardarEdicion()">Guardar cambios</button>
+        <button type="button" class="secondary" onclick="closeModal()">Cancelar</button>
+        <button type="button" class="primary" onclick="guardarEdicion()">Guardar cambios</button>
       </div>
     </div>
   </div>
@@ -104,7 +104,7 @@
     <div class="modal">
       <header>
         <h2>Gestionar categoría</h2>
-        <button onclick="closeCatDelete()">✖</button>
+        <button type="button" onclick="closeCatDelete()">✖</button>
       </header>
 
       <div>
@@ -120,9 +120,24 @@
       </div>
 
       <div class="actions" style="margin-top:12px;">
-        <button id="btnDelAll" class="primary" onclick="deleteCategoryAll()">Eliminar TODO</button>
-        <button id="btnArchive" class="secondary" onclick="archiveCategory()">Archivar / Restaurar / Ocultar</button>
-        <button class="secondary" onclick="closeCatDelete()">Cancelar</button>
+        <button type="button" id="btnDelAll" class="primary" onclick="deleteCategoryAll()">Eliminar TODO</button>
+        <button type="button" id="btnArchive" class="secondary" onclick="archiveCategory()">Archivar / Restaurar / Ocultar</button>
+        <button type="button" class="secondary" onclick="closeCatDelete()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <!-- Modal genérico de confirmación -->
+  <div id="confirmOv" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <header>
+        <h2 id="confirmTitle">Confirmación</h2>
+        <button type="button" onclick="confirmClose()" aria-label="Cerrar">✖</button>
+      </header>
+      <div id="confirmBody" style="margin:6px 0 10px;"></div>
+      <div id="confirmMsg" class="toast" style="display:none"></div>
+      <div class="actions">
+        <button type="button" class="secondary" onclick="confirmClose()">Cancelar</button>
+        <button type="button" class="primary" id="confirmOkBtn" onclick="confirmOk()">Aceptar</button>
       </div>
     </div>
   </div>

@@ -17,6 +17,7 @@
       <a href="/transactions.html">Transacciones</a>
       <a href="/budgets.html">Presupuestos</a>
       <a href="/reports.html">Reportes</a>
+			<a href="/learning.html">Aprendizaje</a>
       <button onclick="logout()">Salir</button>
     </div>
   </header>
@@ -45,8 +46,8 @@
         </div>
 
         <br />
-        <button class="primary" id="btnSave" onclick="guardar()">Guardar</button>
-        <button class="secondary" id="btnClear" onclick="limpiar()">Limpiar</button>
+        <button type="button" class="primary" id="btnSave" onclick="guardar()">Guardar</button>
+        <button type="button" class="secondary" id="btnClear" onclick="limpiar()">Limpiar</button>
         <div id="msg" class="toast"></div>
       </div>
 
@@ -60,7 +61,7 @@
             <input id="fAnio" type="number" min="2000" max="2100" />
           </div>
           <br />
-          <button class="secondary" onclick="cargar()">Buscar</button>
+          <button type="button" class="secondary" onclick="cargar()">Buscar</button>
 
         </div>
 
@@ -78,6 +79,22 @@
       </div>
     </div>
   </div>
+  <!-- Modal genérico de confirmación -->
+  <div id="confirmOv" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <header>
+        <h2 id="confirmTitle">Confirmación</h2>
+        <button type="button" onclick="confirmClose()" aria-label="Cerrar">✖</button>
+      </header>
+      <div id="confirmBody" style="margin:6px 0 10px;"></div>
+      <div id="confirmMsg" class="toast" style="display:none"></div>
+      <div class="actions">
+        <button type="button" class="secondary" onclick="confirmClose()">Cancelar</button>
+        <button type="button" class="primary" id="confirmOkBtn" onclick="confirmOk()">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- Scripts -->
   <script src="/js/ui.js"></script>

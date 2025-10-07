@@ -28,6 +28,23 @@ exports.create = async (req, res) => {
  */
 exports.list = async (req, res) => {
   try {
+    const includeArchived = ['1', 'true', 'yes'].includes(String(req.query.includeArchived ||'').toLowerCase());
+
+    const whereAND = [{ userId: req.user.id }];
+    if (!includeArchived) whereAND.push({ activo: true });
+
+    const list = await PaymentMethod.findAll({
+      where: { [Op.and]: whereAND },
+      order: [['activo', 'DESC'], ['nombre', 'ASC']],
+    });
+
+    res.json(list);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+exports.listadoTotal = async (req, res) => {
+  try {
     const includeArchived = ['1', 'true', 'yes'].includes(String(req.query.includeArchived = '1'|'true').toLowerCase());
 
     const whereAND = [{ userId: req.user.id }];
@@ -43,7 +60,6 @@ exports.list = async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 };
-
 /** Editar: nombre y/o activo (solo dueño o admin) */
 exports.update = async (req, res) => {
   try {

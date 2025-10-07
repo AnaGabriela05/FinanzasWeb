@@ -560,3 +560,108 @@ td.actions{
 
 .reports-page .chart-box {
   height: 520px; }  /* súbelo o bájalo a tu gusto */
+/* Confirm modal */
+.confirm-modal{ width:min(460px, 92vw); }
+.confirm-header{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.confirm-icon{ width:36px; height:36px; display:grid; place-items:center; }
+.confirm-icon svg{ width:28px; height:28px; }
+.confirm-msg{ color:var(--text-color); margin:8px 0 2px; }
+.confirm-actions{ display:flex; gap:8px; justify-content:flex-end; }
+
+/* Botón peligro (usa tu variable de delete) */
+.btn-danger{ background: var(--delete-bg,#eb6161) !important; color:#fff !important; }
+.btn-danger:hover{ filter:brightness(1.05); }
+
+/* Variantes (opcional, por si quieres tonos distintos) */
+.confirm-modal.v-warning h2{ color: var(--first-color-alt); }
+.confirm-modal.v-danger  h2{ color: #b91c1c; }
+
+/* ===== Modal de decisión (3 opciones) ===== */
+.choice-modal{ width:min(680px, 96vw); }
+.choice-header{ margin-bottom:8px; }
+.choice-header h2{ margin:0 0 2px; }
+.choice-header .muted{ color: var(--text-color-light); }
+
+.choice-summary{
+  display:flex; gap:14px; align-items:flex-start;
+  border:1px solid #eef2ff; background:#fafcff; border-radius:12px; padding:12px;
+  margin:8px 0 10px;
+}
+.choice-summary .rows p{ margin:0 0 4px; }
+.choice-summary .kpis{ display:flex; gap:10px; margin-left:auto; }
+.choice-summary .kpi{
+  min-width:96px; text-align:center; background:#fff;
+  border:1px solid #eef2ff; border-radius:10px; padding:8px 10px; box-shadow: var(--shadow);
+}
+.choice-summary .kpi span{ display:block; font-weight:700; font-size:18px; color:var(--title-color); }
+.choice-summary .kpi small{ color:var(--text-color-light); }
+
+.panel{
+  border:1px solid #e5e7eb; border-radius:10px; background:#fff;
+  padding:10px 12px; margin-top:6px;
+}
+.panel .bullets{ margin:8px 0 0 18px; }
+.panel .bullets li{ margin:4px 0; }
+
+.choice-actions{
+  display:flex; gap:10px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;
+}
+@media (max-width: 520px){
+  .choice-actions{ flex-direction:column-reverse; }
+  .choice-actions .primary, .choice-actions .secondary{ width:100%; }
+}
+
+/* Confirm modal ya lo tienes. Añado un tono de sombra */
+.modal.confirm-modal, .modal.choice-modal{ box-shadow:0 20px 40px rgba(0,0,0,.18); }
+
+
+
+/* ===== Aprendizaje (videos) ===== */
+.video-grid{
+  display:grid; gap:14px;
+  grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
+}
+@media (min-width:1200px){
+  /* ~4-5 columnas en pantallas anchas */
+  .video-grid{ grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); }
+}
+.video-card{
+  background:#fff; border:1px solid #eef2ff; border-radius:var(--radius);
+  box-shadow: var(--shadow);
+  overflow:hidden; display:flex; flex-direction:column;
+}
+.ratio-16x9{ aspect-ratio: 16/9; position:relative; }
+.video-thumb{ position:relative; width:100%; height:100%; background:#000; }
+.video-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.video-thumb .overlay{
+  position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.28));
+  opacity:.9; transition:opacity .15s ease;
+}
+.video-card:hover .overlay{ opacity:1; }
+.play-badge{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  background:rgba(255,255,255,.92); color:#111; border:0; border-radius:999px;
+  padding:8px 14px; font-weight:600; cursor:pointer; box-shadow:0 8px 24px rgba(0,0,0,.15);
+}
+.video-info{ padding:12px; display:flex; flex-direction:column; gap:6px; }
+.video-info h3{ font-size:1rem; line-height:1.3; margin:0; }
+.video-info p{ margin:0; color:var(--text-color-light); font-size:.9rem; }
+.tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+.pill{
+  padding:2px 8px; border-radius:999px; font-size:.75rem;
+  background:#F7F9FF; border:1px solid #e8edff; color:#4b5563;
+}
+
+.video-actions{ margin-top:8px; display:flex; gap:8px; align-items:center; }
+.video-actions .secondary.small{ padding:6px 10px; font-size:.85rem; }
+
+/* Modal de video, un poco más ancho */
+.video-modal{ width:min(880px, 94vw); }
+
+/* Compatibilidad si el navegador no soporta aspect-ratio */
+.ratio-16x9[data-polyfill="1"]::before{
+  content:""; display:block; padding-top:56.25%;
+}
+.ratio-16x9[data-polyfill="1"] > *{
+  position:absolute; inset:0;
+}

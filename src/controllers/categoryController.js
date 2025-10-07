@@ -35,6 +35,34 @@ exports.create = async (req, res) => {
 exports.list = async (req, res) => {
   try {
     const userId = req.user.id;
+    const includeArchived = ['1','true','yes'].includes(String(req.query.includeArchived ||'').toLowerCase());
+
+    // ids de globales ocultas para este usuario
+    const hidden = await UserCategoryHide.findAll({
+      where: { userId, hidden: true },
+      attributes: ['categoryId']
+    });
+    const hiddenIds = hidden.map(r => r.categoryId);
+
+    const whereAND = [
+      { [Op.or]: [{ global: true }, { userId }] },
+      hiddenIds.length ? { id: { [Op.notIn]: hiddenIds } } : {}
+    ];
+    if (!includeArchived) whereAND.push({ activo: true });
+
+    const cats = await Category.findAll({
+      where: { [Op.and]: whereAND },
+      order: [['global', 'DESC'], ['nombre', 'ASC']]
+    });
+
+    res.json(cats);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+exports.listadoTotal = async (req, res) => {
+  try {
+    const userId = req.user.id;
     const includeArchived = ['1','true','yes'].includes(String(req.query.includeArchived = '1'|'true').toLowerCase());
 
     // ids de globales ocultas para este usuario
@@ -60,7 +88,6 @@ exports.list = async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 };
-
 /**
  * Editar:
  * - Global:

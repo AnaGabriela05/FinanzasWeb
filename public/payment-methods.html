@@ -1,122 +1,123 @@
 <!doctype html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Métodos de pago — Finanzas</title>
-  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
+
 <body>
-<header>
-  <div><a href="/dashboard.html">💸 Finanzas —  Métodos de pago</a></div>
-  <div class="nav">
-    <a href="/categories.html">Categorías</a>
-    <a href="/payment-methods.html">Métodos de pago</a>
-    <a href="/transactions.html">Transacciones</a>
-    <a href="/budgets.html">Presupuestos</a>
-    <a href="/reports.html">Reportes</a>
-    <button onclick="logout()">Salir</button>
-  </div>
-</header>
-
-<div class="container">
-  <h1>Métodos de pago</h1>
-
-  <div class="grid">
-    <!-- Formulario -->
-    <div class="card">
-      <h2>Nuevo método</h2>
-      <label>Nombre</label>
-      <input id="pmNombre" />
-      <br/>
-      <button class="primary" onclick="crear()">Crear</button>
-      <div id="msg" class="toast"></div>
+  <header>
+    <div><a href="/dashboard.html">💸 Finanzas — Métodos de pago</a></div>
+    <div class="nav">
+      <a href="/categories.html">Categorías</a>
+      <a href="/payment-methods.html">Métodos de pago</a>
+      <a href="/transactions.html">Transacciones</a>
+      <a href="/budgets.html">Presupuestos</a>
+      <a href="/reports.html">Reportes</a>
+      <button onclick="logout()">Salir</button>
     </div>
+  </header>
 
-    <!-- Listado -->
-    <div class="card">
-      <h2>Listado</h2>
-      <table id="tabla">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Activo</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-</div>
+  <div class="container">
+    <h1>Métodos de pago</h1>
 
-<!-- Modal edición PM -->
-<div id="pmModalOv" class="modal-overlay">
-  <div class="modal">
-    <header>
-      <h2>Editar método de pago</h2>
-      <button onclick="closePm()">✖</button>
-    </header>
-    <div>
-      <label>Nombre</label>
-      <input id="pmEditNombre" />
-      <label class="toggle"><input type="checkbox" id="pmEditActivo"/> Activo</label>
-      <div id="pmEditMsg" class="toast"></div>
-    </div>
-    <div class="actions">
-      <button class="secondary" onclick="closePm()">Cancelar</button>
-      <button class="primary" onclick="guardarPm()">Guardar cambios</button>
-    </div>
-  </div>
-</div>
-<!-- Modal eliminación / archivado de Método de pago -->
-<div id="pmDelOv" class="modal-overlay">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pmDelTitle">
-    <header>
-      <h2 id="pmDelTitle">Eliminar método de pago</h2>
-      <button onclick="pmCloseDel()" aria-label="Cerrar">✖</button>
-    </header>
-
-    <div>
-      <p style="margin-bottom:10px">
-        <strong id="pmDelName">—</strong>
-      </p>
-
-      <div id="pmDelCounts" class="toast">
-        <p style="margin:0">
-          Este método tiene <strong id="pmDelTxs">0</strong> transacciones asociadas.
-        </p>
+    <div class="grid">
+      <!-- Formulario -->
+      <div class="card">
+        <h2>Nuevo método</h2>
+        <label>Nombre</label>
+        <input id="pmNombre" />
+        <br />
+        <button class="primary" onclick="crear()">Crear</button>
+        <div id="msg" class="toast"></div>
       </div>
 
-      <div class="toast" style="margin-top:8px">
-        <p style="margin:0 0 6px">¿Qué deseas hacer?</p>
-        <ul style="margin-left:18px; color:#4B5563">
-          <li><strong>Eliminar TODO (cascada)</strong>: borra transacciones + el método.</li>
-          <li><strong>Archivar</strong>: marca el método como inactivo y mantiene el historial.</li>
-          <li><strong>Cancelar</strong>: no se realiza ningún cambio.</li>
-        </ul>
+      <!-- Listado -->
+      <div class="card">
+        <h2>Listado</h2>
+        <table id="tabla">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Activo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
-
-      <div id="pmDelNoteNoUse" class="toast hidden" style="margin-top:8px">
-        <small class="muted">Este método no tiene transacciones. Puedes eliminarlo directamente o archivarlo si prefieres.</small>
-      </div>
-
-      <div id="pmDelMsg" class="toast" style="display:none"></div>
-    </div>
-
-    <div class="actions">
-      <button class="secondary" onclick="pmCloseDel()">Cancelar</button>
-      <button class="secondary" id="pmBtnArchive" onclick="pmDoArchive()">Archivar (mantener historial)</button>
-      <button class="primary"   id="pmBtnCascade" onclick="pmDoCascade()">Eliminar TODO (cascada)</button>
     </div>
   </div>
-</div>
 
-<!-- Scripts -->
-<script src="/js/ui.js"></script>
-<script src="/js/auth.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/common.js"></script>
+  <!-- Modal edición PM -->
+  <div id="pmModalOv" class="modal-overlay">
+    <div class="modal">
+      <header>
+        <h2>Editar método de pago</h2>
+        <button onclick="closePm()">✖</button>
+      </header>
+      <div>
+        <label>Nombre</label>
+        <input id="pmEditNombre" />
+        <label class="toggle"><input type="checkbox" id="pmEditActivo" /> Activo</label>
+        <div id="pmEditMsg" class="toast"></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="secondary" onclick="closePm()">Cancelar</button>
+        <button type="button" class="primary" onclick="guardarPm()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+  <!-- Modal OPCIONES: archivar vs eliminar todo -->
+  <div id="pmDelOv" class="modal-overlay" style="display:none">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pmDelTitle">
+      <header>
+        <h2 id="pmDelTitle">Acción sobre método de pago</h2>
+      </header>
+
+      <div class="content">
+        <p><strong>Nombre:</strong> <span id="pmDelName">—</span></p>
+        <p><strong>Transacciones asociadas:</strong> <span id="pmDelTxs">0</span></p>
+        <p id="pmDelNoteNoUse" class="muted">No hay uso: puedes eliminar sin problemas.</p>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="primary" onclick="pmConfirm('cascade')">Eliminar TODO</button>
+        <button type="button" id="pmActBtn" class="secondary" onclick="pmConfirm('archive')">Archivar (mantener historial)</button>
+        <button type="button" class="secondary" onclick="pmCloseDel()">Cancelar</button>
+        
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal CONFIRMACIÓN final -->
+  <div id="pmConfirmOv" class="modal-overlay" style="display:none">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pmConfirmTitle">
+      <header>
+        <h2 id="pmConfirmTitle">Confirmar</h2>
+      </header>
+
+      <div id="pmConfirmBody" class="content"></div>
+      <div id="pmConfirmMsg" class="msg" style="display:none"></div>
+
+      <div class="actions">
+        <button type="button" class="secondary" onclick="pmCloseConfirm()">Cancelar</button>
+        <button type="button" id="pmConfirmOk" class="primary" onclick="pmDoConfirm()">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Scripts -->
+  <script src="/js/ui.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/common.js"></script>
 
 </body>
+
 </html>
