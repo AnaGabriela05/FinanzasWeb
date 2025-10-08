@@ -10,15 +10,15 @@
 
 <body>
   <header>
-    <div><a href="/dashboard.html">💸 Finanzas — Presupuestos</a></div>
+    <div><a href="/dashboard.html">💸 Finanzas - Presupuestos</a></div>
     <div class="nav">
       <a href="/categories.html">Categorías</a>
       <a href="/payment-methods.html">Métodos de pago</a>
       <a href="/transactions.html">Transacciones</a>
-      <a href="/budgets.html">Presupuestos</a>
+      <a class="active-link" href="/budgets.html">Presupuestos</a>
       <a href="/reports.html">Reportes</a>
 			<a href="/learning.html">Aprendizaje</a>
-      <button onclick="logout()">Salir</button>
+      <button style="background:#64748B;color:#fff;padding:10px 14px;border-radius:10px;" onclick="logout()">Salir</button>
     </div>
   </header>
 
@@ -84,7 +84,7 @@
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
       <header>
         <h2 id="confirmTitle">Confirmación</h2>
-        <button type="button" onclick="confirmClose()" aria-label="Cerrar">✖</button>
+        <button type="button" class="close" onclick="confirmClose()" aria-label="Cerrar">✖</button>
       </header>
       <div id="confirmBody" style="margin:6px 0 10px;"></div>
       <div id="confirmMsg" class="toast" style="display:none"></div>

@@ -1,66 +1,111 @@
 <!doctype html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aprendizaje — Finanzas</title>
-  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
 
 <body>
-<header>
-  <div><a href="/dashboard.html">💸 Finanzas — Aprendizaje</a></div>
-  <div class="nav">
-    <a href="/categories.html">Categorías</a>
-    <a href="/payment-methods.html">Métodos de pago</a>
-    <a href="/transactions.html">Transacciones</a>
-    <a href="/budgets.html">Presupuestos</a>
-    <a href="/reports.html">Reportes</a>
-    <a class="active-link" href="/aprendizaje.html">Aprendizaje</a>
-    <button onclick="logout()">Salir</button>
+  <header>
+    <div><a href="/dashboard.html">💸 Finanzas — Aprendizaje</a></div>
+    <div class="nav">
+      <a href="/categories.html">Categorías</a>
+      <a href="/payment-methods.html">Métodos de pago</a>
+      <a href="/transactions.html">Transacciones</a>
+      <a href="/budgets.html">Presupuestos</a>
+      <a href="/reports.html">Reportes</a>
+      <a class="active-link" href="/aprendizaje.html">Aprendizaje</a>
+      <button style="background:#64748B;color:#fff;padding:10px 14px;border-radius:10px;"
+        onclick="logout()">Salir</button>
+    </div>
+  </header>
+
+
+  <div class="container">
+    <h1>Aprendizaje de educación financiera</h1>
+
+    <!-- Filtros / búsqueda -->
+    <div class="toolbar" style="justify-content:space-between; gap:12px">
+      <input id="vSearch" type="search" placeholder="Buscar tema o canal…" style="max-width:360px">
+      <div class="nav" style="gap:8px">
+        <select id="vTag" title="Filtrar por tema">
+          <option value="">Todos los temas</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Grid de videos -->
+    <div id="videoGrid" class="video-grid"></div>
   </div>
-</header>
 
-<div class="container">
-  <h1>Aprendizaje de educación financiera</h1>
+  <!-- Modal de reproducción -->
+  <div class="modal-overlay" id="videoModalOv" style="display:none">
+    <div class="modal video-modal" role="dialog" aria-modal="true" aria-labelledby="vidTitle">
+      <header class="video-modal__header">
+        <h2 id="vidTitle">Reproduciendo…</h2>
+        <button class="btn-icon close" onclick="closeVideoModal()" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </header>
 
-  <!-- Filtros / búsqueda -->
-  <div class="toolbar" style="justify-content:space-between; gap:12px">
-    <input id="vSearch" type="search" placeholder="Buscar tema o canal…" style="max-width:360px">
-    <div class="nav" style="gap:8px">
-      <select id="vTag" title="Filtrar por tema">
-        <option value="">Todos los temas</option>
-      </select>
+      <div class="video-modal__body">
+        <!-- player -->
+        <div class="player-wrap">
+          <div id="vidFrameWrap" class="ratio-16x9"></div>
+        </div>
+
+        <!-- panel lateral -->
+        <aside class="notes">
+          <nav class="notes-tabs">
+            <button class="tab-btn active" data-tab="points">Puntos clave</button>
+            <button class="tab-btn" data-tab="notes">Mis notas</button>
+            <button class="tab-btn" data-tab="todo">Checklist</button>
+          </nav>
+
+          <section id="tabPoints" class="tab-panel active">
+            <ul id="vidKeyPoints" class="keypoints"></ul>
+            <p class="muted small" id="noPoints" style="display:none">Sin puntos cargados para este video.</p>
+          </section>
+
+          <section id="tabNotes" class="tab-panel">
+            <textarea id="vidNotes" rows="8" placeholder="Escribe tus notas aquí…"></textarea>
+            <div class="notes-tools">
+              <button class="btn btn-secondary" id="btnCopyNotes">Copiar</button>
+              <button class="btn btn-secondary" id="btnDownloadNotes">Descargar .txt</button>
+              <span class="saved-indicator" id="notesSaved">Guardado</span>
+            </div>
+          </section>
+
+          <section id="tabTodo" class="tab-panel">
+            <div class="todo-add">
+              <input id="todoInput" type="text" placeholder="Nueva tarea/acción…">
+              <button class="btn btn-primary" id="todoAdd">Añadir</button>
+            </div>
+            <ul id="todoList" class="todo-list"></ul>
+          </section>
+        </aside>
+      </div>
+      
+      <div class="video-modal__footer">
+        <a id="ytLink" class="btn btn-secondary" target="_blank" rel="noopener">Abrir en YouTube</a>
+        <button class="btn btn-primary" onclick="closeVideoModal()">Cerrar</button>
+      </div>
+
     </div>
   </div>
 
-  <!-- Grid de videos -->
-  <div id="videoGrid" class="video-grid"></div>
-</div>
 
-<!-- Modal de reproducción -->
-<div class="modal-overlay" id="videoModalOv" style="display:none">
-  <div class="modal video-modal" role="dialog" aria-modal="true" aria-labelledby="vidTitle">
-    <header style="display:flex;align-items:center;justify-content:space-between">
-      <h2 id="vidTitle">Reproduciendo…</h2>
-      <button class="btn-icon" onclick="closeVideoModal()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 6L6 18M6 6l12 12"></path>
-        </svg>
-      </button>
-    </header>
-    <div id="vidFrameWrap" class="ratio-16x9" style="margin-top:10px;border-radius:12px;overflow:hidden;background:#000"></div>
-    <div class="actions" style="justify-content:flex-end;margin-top:12px">
-      <a id="ytLink" class="secondary" target="_blank" rel="noopener">Abrir en YouTube</a>
-      <button class="primary" onclick="closeVideoModal()">Cerrar</button>
-    </div>
-  </div>
-</div>
 
-<script src="/js/ui.js"></script>
-<script src="/js/auth.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/videos-data.js"></script>
-<script src="/js/learning.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/videos-data.js"></script>
+  <script src="/js/learning.js"></script>
 </body>
+
 </html>
