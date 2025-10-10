@@ -1,30 +1,34 @@
-const sequelize = require('../config/database');
-const Role = require('./role');
-const User = require('./user');
-const Category = require('./category');
-const PaymentMethod = require('./paymentMethod');
-const Transaction = require('./transaction');
-const Budget = require('./budget');
-const UserCategoryHide = require('./userCategoryHide');
+// models/index.js
+const sequelize       = require('../config/database');
+const { DataTypes }   = require('sequelize');      // ← IMPORTA DataTypes
 
-// Roles (1:N)
+const Role            = require('./role');
+const User            = require('./user');
+const Category        = require('./category');
+const PaymentMethod   = require('./paymentMethod');
+const Transaction     = require('./transaction');
+const Budget          = require('./budget');
+const UserCategoryHide= require('./userCategoryHide');
+
+// Instancia del modelo LearningState (factory)
+const LearningState   = require('./LearningState')(sequelize, DataTypes); // ← OK
+
+// --- Relaciones existentes ---
 Role.hasMany(User, { foreignKey: 'roleId', as: 'users' });
 User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
 
-// User ownership
-User.hasMany(Category, { foreignKey: 'userId', as: 'categories' });
-Category.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(Category,      { foreignKey: 'userId', as: 'categories' });
+Category.belongsTo(User,    { foreignKey: 'userId', as: 'user' });
 
 User.hasMany(PaymentMethod, { foreignKey: 'userId', as: 'paymentMethods' });
 PaymentMethod.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-User.hasMany(Transaction, { foreignKey: 'userId', as: 'transactions' });
+User.hasMany(Transaction,   { foreignKey: 'userId', as: 'transactions' });
 Transaction.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-User.hasMany(Budget, { foreignKey: 'userId', as: 'budgets' });
-Budget.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(Budget,        { foreignKey: 'userId', as: 'budgets' });
+Budget.belongsTo(User,      { foreignKey: 'userId', as: 'user' });
 
-// Relations with categories & payment methods
 Category.hasMany(Transaction, { foreignKey: 'categoryId', as: 'transactions' });
 Transaction.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 
@@ -37,4 +41,9 @@ Budget.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 UserCategoryHide.belongsTo(User,    { foreignKey: 'userId',    as: 'user' });
 UserCategoryHide.belongsTo(Category,{ foreignKey: 'categoryId',as: 'category' });
 
-module.exports = { sequelize, Role, User, Category, PaymentMethod, Transaction, Budget,UserCategoryHide };
+// Exporta también LearningState
+module.exports = {
+  sequelize,
+  Role, User, Category, PaymentMethod, Transaction, Budget, UserCategoryHide,
+  LearningState,                      // ← AQUI
+};

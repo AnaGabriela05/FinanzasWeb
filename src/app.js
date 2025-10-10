@@ -1,15 +1,17 @@
+// app.js
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 const path = require('path');
 
-const authRoutes = require('./routes/authRoutes');
-const categoryRoutes = require('./routes/categoryRoutes');
+const authRoutes        = require('./routes/authRoutes');
+const categoryRoutes    = require('./routes/categoryRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
-const budgetRoutes = require('./routes/budgetRoutes');
-const methodRoutes = require('./routes/paymentMethodRoutes');
-const roleRoutes = require('./routes/roleRoutes');
-const reportRoutes = require('./routes/reportRoutes');
+const budgetRoutes      = require('./routes/budgetRoutes');
+const methodRoutes      = require('./routes/paymentMethodRoutes');
+const roleRoutes        = require('./routes/roleRoutes');
+const reportRoutes      = require('./routes/reportRoutes');
+const learningRoutes    = require('./routes/learningRoutes'); // ← CORRECTO
 
 const app = express();
 
@@ -21,9 +23,7 @@ app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Health
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, service: 'finanzas' });
-});
+app.get('/api/health', (req, res) => res.json({ ok: true, service: 'finanzas' }));
 
 // API
 app.use('/api/auth', authRoutes);
@@ -33,8 +33,9 @@ app.use('/api/budgets', budgetRoutes);
 app.use('/api/payment-methods', methodRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/learning', learningRoutes);  // ← AQUI
 
-// Fallback a index.html
+// Fallback
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
