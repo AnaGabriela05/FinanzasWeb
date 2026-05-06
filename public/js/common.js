@@ -298,7 +298,7 @@
   // ---------- DASHBOARD ----------
   async function initDashboard() {
     const u = Auth.user() || {};
-    $('#nombre').textContent = u.nombre || '';
+    $('#userName').textContent = u.nombre || '';
     const resumen = $('#resumen');
 
     async function cargar() {
@@ -314,7 +314,124 @@
         <div class="card"><h2>Categorías</h2><div><span class="badge">${cats.length}</span> visibles</div></div>
       `;
     }
+    // --- Helpers de fecha
+    const daysAgo = (n = 90) => {
+      const d = new Date(); d.setDate(d.getDate() - n);
+      return d.toISOString().slice(0, 10);
+    };
+
+    // --- Heurística de deuda (ajústala a tus categorías)
+    const isDebtCategory = (name = '') => /deuda|cr[eé]dito|tarjeta|pr[eé]stamo|cuota/i.test(name);
+
+    // --- Scoring de cada métrica (devuelve 0–100)
+    const scoreSavingRate = r => (r > 0.20) ? 100 : (r >= 0.10) ? 70 : (r >= 0) ? 40 : 10;                 // mayor=mejor
+    const scoreExpenseRatio = r => (r < 0.80) ? 100 : (r <= 0.95) ? 70 : 40;                          // menor=mejor
+    const scoreBudgetHit = s => (s <= 0) ? 100 : (s <= 0.10) ? 70 : 40;                            // s = sobre-ejecución relativa
+    const scoreDebtLoad = r => (r < 0.10) ? 100 : (r <= 0.25) ? 70 : 40;                          // menor=mejor
+
+    // --- Etiqueta por score final
+    function levelFromScore(s) {
+      if (s >= 75) return { key: 'buena', txt: 'Buena' };
+      if (s >= 50) return { key: 'media', txt: 'Media' };
+      return { key: 'baja', txt: 'Baja' };
+    }
+
+    // --- Cálculo principal (últimos 90 días)
+    async function computeFinancialHealth() {
+      // 1) Traer datos
+      const from = daysAgo(90), to = new Date().toISOString().slice(0, 10);
+      const qs = `?from=${from}&to=${to}`;
+      const txs = await API.get('/api/transactions' + qs);          // [{fecha, monto, category:{tipo,nombre}}]
+      let budgets = [];
+      try { budgets = await API.get('/api/budgets'); } catch { }
+
+      // 2) Agregados básicos
+      const ingresos = txs.filter(t => t.category?.tipo === 'ingreso')
+        .reduce((a, b) => a + Number(b.monto || 0), 0);
+      const gastos = txs.filter(t => t.category?.tipo === 'gasto')
+        .reduce((a, b) => a + Number(b.monto || 0), 0);
+      const saldo = ingresos - gastos;
+
+      // Deuda (por heurística)
+      const gastosDeuda = txs.filter(t => t.category?.tipo === 'gasto' && isDebtCategory(t.category?.nombre || ''))
+        .reduce((a, b) => a + Number(b.monto || 0), 0);
+
+      // 3) Métricas crudas
+      const savingRate = ingresos > 0 ? (saldo / ingresos) : 0;        // >0 mejor
+      const expenseRatio = ingresos > 0 ? (gastos / ingresos) : 1;       // <1 mejor
+      const debtLoad = ingresos > 0 ? (gastosDeuda / ingresos) : 0;  // <0.1 mejor
+
+      // Presupuesto: sobre-ejecución agregada de categorías con presupuesto del MES actual
+      const now = new Date(); const m = now.getMonth() + 1; const y = now.getFullYear();
+      const activeBudgets = budgets.filter(b => Number(b.mes) === m && Number(b.anio) === y);
+      let budgetOvershootRel = 0.0;
+      if (activeBudgets.length) {
+        let sumBudget = 0, sumGasto = 0;
+        for (const b of activeBudgets) {
+          sumBudget += Number(b.montoMensual || 0);
+          const catId = b.category?.id ?? b.categoryId;
+          const gCat = txs.filter(t => t.category?.id === catId && t.category?.tipo === 'gasto')
+            .reduce((a, b) => a + Number(b.monto || 0), 0);
+          sumGasto += gCat;
+        }
+        const extra = Math.max(0, sumGasto - sumBudget);
+        budgetOvershootRel = sumBudget > 0 ? extra / sumBudget : 0;    // 0–∞ (0 mejor)
+      } else {
+        budgetOvershootRel = null; // neutral luego
+      }
+
+      // 4) Scores por métrica
+      const s1 = scoreSavingRate(savingRate);
+      const s2 = scoreExpenseRatio(expenseRatio);
+      const s3 = (budgetOvershootRel === null) ? 70 : scoreBudgetHit(budgetOvershootRel);
+      const s4 = scoreDebtLoad(debtLoad);
+
+      // 5) Score ponderado
+      const score = Math.round(s1 * 0.40 + s2 * 0.30 + s3 * 0.20 + s4 * 0.10);
+      return {
+        score,
+        level: levelFromScore(score),   // {key, txt}
+        metrics: {
+          savingRate, expenseRatio, budgetOvershootRel, debtLoad,
+          scores: { s1, s2, s3, s4 }
+        }
+      };
+    }
+
+    // --- Pintar en el dashboard
+    function renderFinancialHealth(h) {
+      const card = document.getElementById('cardSalud');
+      if (!card) return;
+
+      card.classList.remove('salud--buena', 'salud--media', 'salud--baja');
+      card.classList.add(`salud--${h.level.key}`);
+
+      document.getElementById('saludNivelTxt').textContent = h.level.txt;
+      document.getElementById('saludFill').style.width = `${h.score}%`;
+      document.getElementById('saludScoreTxt').textContent = h.score;
+
+      // métricas visibilidad/formatos
+      const pct = v => (isFinite(v) ? (v * 100).toFixed(0) + '%' : '—');
+
+      document.getElementById('mSaving').textContent = pct(h.metrics.savingRate);
+      document.getElementById('mExpense').textContent = pct(h.metrics.expenseRatio);
+      document.getElementById('mBudget').textContent =
+        (h.metrics.budgetOvershootRel === null) ? '— (sin presupuestos)' : ('+' + pct(h.metrics.budgetOvershootRel));
+      document.getElementById('mDebt').textContent = pct(h.metrics.debtLoad);
+    }
+
+    // --- Llamar desde tu initDashboard()
+    async function cargarSaludFinanciera() {
+      try {
+        const h = await computeFinancialHealth();
+        renderFinancialHealth(h);
+      } catch (e) {
+        console.error('Salud financiera:', e);
+      }
+    }
+
     cargar();
+    cargarSaludFinanciera()
   }
 
   // ---------- CATEGORÍAS ----------

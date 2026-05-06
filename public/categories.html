@@ -18,11 +18,11 @@
       <a href="/budgets.html">Presupuestos</a>
       <a href="/reports.html">Reportes</a>
 			<a href="/learning.html">Aprendizaje</a>
-      <button style="background:#64748B;color:#fff;padding:10px 14px;border-radius:10px;" onclick="logout()">Salir</button>
+      <button class="secondary nav-logout" onclick="logout()">Salir</button>
     </div>
   </header>
 
-  <div class="container">
+  <div class="container categories-page">
     <h1>Categorías</h1>
 
     <div class="grid">
@@ -44,7 +44,6 @@
           <small class="muted">Solo administradores pueden crear globales</small>
         </div>
 
-        <br />
         <button class="primary" onclick="crear()">Crear</button>
         <div id="msg" class="toast"></div>
       </div>
@@ -71,7 +70,7 @@
     <div class="modal">
       <header>
         <h2>Editar categoría</h2>
-        <button onclick="closeModal()">sadasdas</button>
+        <button type="button" onclick="closeModal()" aria-label="Cerrar">✕</button>
       </header>
 
       <div>

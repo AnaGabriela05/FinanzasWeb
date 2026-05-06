@@ -49,23 +49,43 @@
     </nav>
   </header>-->
   <header>
-    <div>💸 Finanzas — Panel  <span id="nombre"></span></div>
+    <div>💸 Finanzas — Panel <span id="nombre"></span></div>
     <div class="nav">
       <a href="/categories.html">Categorías</a>
       <a href="/payment-methods.html">Métodos de pago</a>
       <a href="/transactions.html">Transacciones</a>
       <a href="/budgets.html">Presupuestos</a>
       <a href="/reports.html">Reportes</a>
-			<a href="/learning.html">Aprendizaje</a>
-      <button style="background:#64748B;color:#fff;padding:10px 14px;border-radius:10px;" onclick="logout()">Salir</button>
+      <a href="/learning.html">Aprendizaje</a>
+      <button class="secondary nav-logout" onclick="logout()">Salir</button>
     </div>
   </header>
 
-  <div class="container">
-    <h1>Hola, <span id="nombre"></span>
+  <div class="container dashboard-page">
+    <h1>Hola, <span id="userName"></span>
     </h1>
     <p class="muted">Resumen rápido</p>
     <div id="resumen" class="grid"></div>
+    <div id="cardSalud" class="card salud-card">
+      <h2>Salud Financiera</h2>
+      <div class="salud-top">
+        <span class="muted">Tu estado</span>
+        <span class="pill-dot" id="saludNivelPill"><i></i><b id="saludNivelTxt">—</b></span>
+      </div>
+      <div class="salud-bar">
+        <div class="salud-fill" id="saludFill" style="width:0%"></div>
+      </div>
+      <div class="salud-meta">
+        <span id="saludScoreTxt">0</span>/100
+      </div>
+      <ul class="salud-list small">
+        <li>Tasa de ahorro: <b id="mSaving">—</b></li>
+        <li>Gastos/Ingresos: <b id="mExpense">—</b></li>
+        <li>Presupuesto: <b id="mBudget">—</b></li>
+        <li>Carga de deuda: <b id="mDebt">—</b></li>
+      </ul>
+    </div>
+
   </div>
 
   <!-- <footer>

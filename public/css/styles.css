@@ -32,13 +32,13 @@
   --body-font: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
 
   /* Tamaños */
-  --big-font-size: 2rem;
-  --h1-font-size: 1.5rem;
-  --h2-font-size: 1.25rem;
-  --h3-font-size: 1.125rem;
-  --normal-font-size: 0.938rem;
-  --small-font-size: 0.813rem;
-  --smaller-font-size: 0.75rem;
+  --big-font-size: 1.45rem;
+  --h1-font-size: 1.4rem;
+  --h2-font-size: 1rem;
+  --h3-font-size: 0.875rem;
+  --normal-font-size: 0.84rem;
+  --small-font-size: 0.74rem;
+  --smaller-font-size: 0.67rem;
 
   /* Pesos */
   --font-medium: 500;
@@ -65,13 +65,13 @@
 /* Tipografía grande */
 @media screen and (min-width: 968px) {
   :root {
-    --big-font-size: 3rem;
-    --h1-font-size: 2.25rem;
-    --h2-font-size: 1.5rem;
-    --h3-font-size: 1.25rem;
-    --normal-font-size: 1rem;
-    --small-font-size: 0.875rem;
-    --smaller-font-size: 0.813rem;
+    --big-font-size: 1.9rem;
+    --h1-font-size: 1.9rem;
+    --h2-font-size: 1.25rem;
+    --h3-font-size: 0.9375rem;
+    --normal-font-size: 0.9rem;
+    --small-font-size: 0.78rem;
+    --smaller-font-size: 0.71rem;
   }
 }
 
@@ -106,6 +106,7 @@ body {
   font-size: var(--normal-font-size);
   background: var(--body-color);
   color: var(--text-color);
+  line-height: 1.34;
 }
 
 h1,
@@ -114,6 +115,24 @@ h3,
 h4 {
   color: var(--title-color);
   font-weight: var(--font-semi-bold);
+}
+
+h1 {
+  font-size: var(--h1-font-size);
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+
+h2 {
+  font-size: var(--h2-font-size);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+h3,
+h4 {
+  font-size: var(--h3-font-size);
+  line-height: 1.08;
 }
 
 a {
@@ -130,9 +149,9 @@ img {
 header {
   background: var(--first-color-second);
   color: #fff;
-  padding: 16px;
+  padding: 6px 10px;
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
 }
@@ -143,44 +162,58 @@ header button {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 0.82rem;
+  line-height: 1.1;
 }
 
 .container {
   max-width: 1100px;
-  margin: 24px auto;
+  margin: 10px auto;
   background: var(--container-color);
-  padding: 24px;
+  padding: 14px;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 
 .grid {
   display: grid;
-  gap: 16px;
+  gap: 8px;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  margin: 20px;
+  margin: 10px 0 0;
 }
 
 .card {
   border: 1px solid #e5e7eb;
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 10px;
   background: #fff;
+}
+
+.card .grid {
+  gap: 6px;
+  margin-top: 6px;
 }
 
 /*==================== NAV (links superiores) ====================*/
 .nav {
   display: flex;
-  gap: 12px;
+  gap: 6px;
   flex-wrap: wrap;
   align-items: center;
 }
 
 .nav a {
-  padding: 8px 10px;
+  padding: 4px 7px;
   border-radius: 10px;
   transition: background .2s ease, color .2s ease;
+}
+
+.nav .nav-logout {
+  width: auto;
+  margin-bottom: 0;
+  min-height: 30px;
+  padding: 5px 9px;
 }
 
 .nav a:hover,
@@ -192,21 +225,24 @@ header button {
 /*==================== FORMULARIOS ====================*/
 label {
   display: block;
-  font-size: 14px;
+  font-size: 11px;
   color: #374151;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
 input,
 select {
   width: 100%;
-  padding: 10px 12px;
+  padding: 6px 9px;
   border-radius: 10px;
   border: 1px solid #d1d5db;
   background: var(--input-color);
   color: var(--title-color);
-  margin-bottom: 10px;
+  margin-bottom: 5px;
   outline: none;
+  min-height: 34px;
+  font-size: 0.84rem;
+  line-height: 1.1;
 }
 
 input:focus,
@@ -220,8 +256,8 @@ label.toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  margin: 6px 0 10px;
+  font-size: 11px;
+  margin: 3px 0 6px;
 }
 
 /*==================== BOTONES ====================*/
@@ -232,13 +268,16 @@ button {
 button.primary {
   background: var(--first-color);
   color: #1F2937;
-  padding: 10px 14px;
+  padding: 6px 10px;
   border-radius: 10px;
   border: none;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
   width: 100%;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
+  min-height: 34px;
+  font-size: 0.82rem;
+  line-height: 1.1;
 }
 
 button.primary:hover {
@@ -250,14 +289,17 @@ button.secondary {
   background: #64748B;
   /* neutro frío */
   color: #fff;
-  padding: 10px 14px;
+  padding: 6px 10px;
   border-radius: 10px;
   border: none;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
   opacity: .96;
   width: 100%;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
+  min-height: 34px;
+  font-size: 0.82rem;
+  line-height: 1.1;
 }
 
 button.secondary:hover {
@@ -271,10 +313,12 @@ button.google {
   background: #fff;
   color: #111;
   border: 1px solid #ddd;
-  padding: 10px 14px;
+  padding: 6px 10px;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
+  min-height: 34px;
+  font-size: 0.82rem;
 }
 
 button.google img {
@@ -295,14 +339,16 @@ thead th {
   background: #F7F9FF;
   color: #111;
   text-align: left;
-  font-weight: 600;
-  padding: 12px 10px;
+  font-weight: 500;
+  font-size: 0.73rem;
+  padding: 7px 8px;
   border-bottom: 1px solid #eef2ff;
 }
 
 tbody td {
-  padding: 10px;
+  padding: 6px 8px;
   border-bottom: 1px solid #f1f1f1;
+  font-size: 0.82rem;
 }
 
 tbody tr:hover {
@@ -312,7 +358,7 @@ tbody tr:hover {
 /*==================== BADGES ====================*/
 .badge {
   display: inline-block;
-  padding: 4px 8px;
+  padding: 2px 6px;
   border-radius: 999px;
   background: #FFEAC2;
   /* peach */
@@ -325,11 +371,13 @@ tbody tr:hover {
 /*==================== TOASTS ====================*/
 .toast {
   margin-top: 8px;
-  padding: 10px 12px;
+  padding: 7px 9px;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   color: #111;
   background: #fff;
+  font-size: 0.8rem;
+  line-height: 1.28;
 }
 
 .toast.success {
@@ -360,7 +408,7 @@ tbody tr:hover {
   width: min(560px, 92vw);
   border-radius: var(--radius);
   box-shadow: 0 20px 40px rgba(0, 0, 0, .2);
-  padding: 16px;
+  padding: 10px;
 }
 
 .modal header {
@@ -376,7 +424,7 @@ tbody tr:hover {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 /*==================== UTILIDADES ====================*/
@@ -424,7 +472,7 @@ footer {
 
 /* === Transacciones: form más estrecho que el listado === */
 .tx-page .grid {
-  gap: 20px;
+  gap: 8px;
 }
 
 @media (min-width: 900px) {
@@ -441,34 +489,36 @@ footer {
 
 /* Compacta solo el formulario */
 .tx-form {
-  padding: 16px 14px;
+  padding: 10px;
 }
 
 .tx-form h2 {
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
 
 .tx-form label {
-  font-size: 13px;
-  margin-bottom: 4px;
+  font-size: 10px;
+  margin-bottom: 2px;
 }
 
 .tx-form input,
 .tx-form select {
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  font-size: 0.92rem;
+  padding: 6px 8px;
+  margin-bottom: 5px;
+  font-size: 0.82rem;
+  min-height: 34px;
 }
 
 .tx-form .primary {
   width: 100%;
-  padding: 10px 14px;
-  font-size: 0.95rem;
+  padding: 6px 9px;
+  font-size: 0.82rem;
+  min-height: 34px;
 }
 
 /* === Presupuestos: formulario más estrecho y compacto === */
 .budget-page .grid {
-  gap: 20px;
+  gap: 8px;
 }
 
 /* Desktop */
@@ -487,30 +537,31 @@ footer {
 
 /* Compactar solo el formulario */
 .budget-form {
-  padding: 16px 14px;
+  padding: 10px;
 }
 
 .budget-form h2 {
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
 
 .budget-form label {
-  font-size: 13px;
-  margin-bottom: 4px;
+  font-size: 11px;
+  margin-bottom: 2px;
 }
 
 .budget-form input,
 .budget-form select {
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  font-size: 0.92rem;
+  padding: 6px 8px;
+  margin-bottom: 5px;
+  font-size: 0.82rem;
+  min-height: 34px;
 }
 
 /* Botón principal a bloque, con separación abajo */
 .budget-form .primary {
   display: block;
   width: 100%;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   /* ← separa del siguiente botón */
 }
 
@@ -579,8 +630,8 @@ td.actions {
 }
 
 .btn-icon {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border: 0;
   border-radius: 10px;
   display: inline-flex;
@@ -611,8 +662,8 @@ td.actions {
 }
 
 .btn-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   stroke: currentColor;
   pointer-events: none;
 }
@@ -633,7 +684,7 @@ td.actions {
 /* ==================== REPORTES (resumen + gráficos) ==================== */
 /* Layout: filtros | contenido (resumen + panel) */
 .reports-page .grid {
-  gap: 18px;
+  gap: 8px;
 }
 
 @media (min-width: 980px) {
@@ -654,7 +705,7 @@ td.actions {
 .reports-page .filters-card .toolbar {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .reports-page .filters-card button {
@@ -663,34 +714,48 @@ td.actions {
 
 /* Resumen en tarjetas (KPI) */
 .reports-page .summary {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .reports-page .summary-grid {
   display: grid;
-  gap: 12px;
+  gap: 6px;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
 }
 
 .reports-page .summary-grid .metric {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px;
+  gap: 3px;
+  padding: 8px;
   border: 1px solid #eef2ff;
   border-radius: 12px;
   background: #fff;
 }
 
+.reports-page .summary-grid .metric p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 10px;
+}
+
+.reports-page .summary-grid .metric h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.08;
+}
+
 .reports-page .summary-grid .metric .label {
   margin: 0;
   color: #6b7280;
-  font-size: 13px;
+  font-size: 10px;
 }
 
 .reports-page .summary-grid .metric .value {
   margin: 0;
-  font-size: 22px;
+  font-size: 0.92rem;
   font-weight: 700;
   color: #111;
   font-variant-numeric: tabular-nums;
@@ -698,14 +763,14 @@ td.actions {
 }
 
 .reports-page .summary-grid .metric .sub {
-  font-size: 12px;
+  font-size: 10px;
   color: #6b7280;
 }
 
 /* Panel de gráficos */
 .reports-page .charts-grid {
   display: grid;
-  gap: 16px;
+  gap: 8px;
   grid-template-columns: 1.1fr 1fr;
   /* barras | pie */
 }
@@ -714,12 +779,13 @@ td.actions {
   background: #fff;
   border: 1px solid #eef2ff;
   border-radius: 12px;
-  padding: 14px;
+  padding: 8px;
 }
 
 .reports-page .charts-grid h3 {
-  margin-bottom: 8px;
-  font-size: 14px;
+  margin-bottom: 3px;
+  font-size: 0.8rem;
+  font-weight: 500;
   color: #374151;
 }
 
@@ -773,7 +839,7 @@ td.actions {
 /* 2 columnas: Filtros fijo-elástico | Panel flexible */
 .reports-page .layout {
   display: grid;
-  gap: 20px;
+  gap: 8px;
   grid-template-columns: clamp(260px, 26vw, 360px) 1fr;
 }
 
@@ -786,12 +852,12 @@ td.actions {
 /* Métricas en tarjetas, se auto-rompen según ancho */
 .reports-page .summary-grid {
   display: grid;
-  gap: 12px;
+  gap: 6px;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
 }
 
 .reports-page .summary-grid .metric {
-  padding: 14px;
+  padding: 8px;
   border: 1px solid #eef2ff;
   border-radius: 12px;
   background: #fff;
@@ -800,7 +866,7 @@ td.actions {
 /* Contenedor de charts 100% fluidos */
 .reports-page .charts-grid {
   display: grid;
-  gap: 16px;
+  gap: 8px;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
@@ -809,8 +875,8 @@ td.actions {
   background: #fff;
   border: 1px solid #eef2ff;
   border-radius: 12px;
-  padding: 14px;
-  min-height: 320px;
+  padding: 8px;
+  min-height: 210px;
   /* <- alto base cómodo */
   display: flex;
   flex-direction: column;
@@ -835,7 +901,7 @@ td.actions {
 /* Botoneras arriba/derecha: se acomodan en móvil */
 .reports-page .toolbar {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   justify-content: flex-end;
   flex-wrap: wrap;
 }
@@ -859,7 +925,7 @@ td.actions {
 
 
 .reports-page .chart-box {
-  height: 520px;
+  height: 340px;
 }
 
 /* súbelo o bájalo a tu gusto */
@@ -941,7 +1007,7 @@ td.actions {
   border: 1px solid #eef2ff;
   background: #fafcff;
   border-radius: 12px;
-  padding: 12px;
+  padding: 10px 12px;
   margin: 8px 0 10px;
 }
 
@@ -1724,4 +1790,295 @@ aside.notes {
 #todoList li.done span{
   text-decoration: line-through;
   color: #9ca3af;
+}
+
+.dashboard-page > h1,
+.categories-page > h1,
+.tx-page > h1,
+.budget-page > h1,
+.reports-page > h1 { margin-bottom: 0.1rem; }
+
+.dashboard-page > .muted { font-size: 0.8rem; line-height: 1.25; }
+
+#resumen .card {
+  padding: 9px 10px;
+}
+
+#resumen .card h2 {
+  margin-bottom: 3px;
+  font-size: 0.82rem;
+}
+
+#resumen .card strong {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.dashboard-page #resumen {
+  gap: 6px;
+}
+
+.categories-page .card > h2,
+.budget-page .card > h2,
+.tx-page .card > h2,
+.reports-page .card > h2 {
+  margin-bottom: 6px;
+}
+
+.categories-page p,
+.budget-page p,
+.tx-page p,
+.reports-page p,
+.dashboard-page p,
+.categories-page li,
+.budget-page li,
+.tx-page li,
+.reports-page li,
+.dashboard-page li {
+  line-height: 1.24;
+}
+
+.salud-card{ display:flex; flex-direction:column; gap:4px; padding:9px 10px; }
+.salud-top{ display:flex; align-items:center; justify-content:space-between; }
+.pill-dot{ display:inline-flex; gap:5px; align-items:center; padding:2px 7px; border-radius:999px; border:1px solid #e5e7eb; background:#fff; font-size:.74rem; }
+.pill-dot i{ width:10px; height:10px; border-radius:999px; display:inline-block; background:#9ca3af; }
+.salud-bar{ width:100%; height:7px; background:#f1f5f9; border-radius:999px; overflow:hidden; }
+.salud-fill{ height:100%; width:0%; background:#22c55e; border-radius:999px; transition:width .4s ease; }
+.salud-meta{ font-weight:600; color:#111827; font-size:.78rem; }
+.salud-list{ margin:1px 0 0; padding-left:12px; }
+.small{ font-size:.74rem; }
+.salud--buena .salud-fill{ background:#22c55e; }
+.salud--media .salud-fill{ background:#f59e0b; }
+.salud--baja  .salud-fill{ background:#ef4444; }
+.salud--buena .pill-dot i{ background:#22c55e; }
+.salud--media .pill-dot i{ background:#f59e0b; }
+.salud--baja  .pill-dot i{ background:#ef4444; }
+
+/* ===== Compactación visual fuerte para frontend financiero ===== */
+.dashboard-page > h1,
+.categories-page > h1,
+.tx-page > h1,
+.budget-page > h1,
+.reports-page > h1 {
+  font-size: clamp(1.22rem, 1.6vw, 1.72rem) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.045em !important;
+  margin-bottom: 0 !important;
+}
+
+.dashboard-page > .muted,
+.categories-page > .muted,
+.tx-page > .muted,
+.budget-page > .muted,
+.reports-page > .muted {
+  font-size: 0.74rem !important;
+  line-height: 1.18 !important;
+  margin-top: 2px !important;
+}
+
+header {
+  padding: 5px 10px !important;
+  min-height: 44px;
+}
+
+header > div:first-child,
+header > div:first-child a {
+  font-size: 0.82rem !important;
+  line-height: 1.05 !important;
+}
+
+.nav {
+  gap: 5px !important;
+}
+
+.nav a,
+.nav .nav-logout {
+  padding: 4px 7px !important;
+  min-height: 28px !important;
+  font-size: 0.78rem !important;
+  border-radius: 8px !important;
+}
+
+.container {
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+  padding: 12px !important;
+}
+
+.grid {
+  gap: 8px !important;
+  margin-top: 8px !important;
+}
+
+.card {
+  padding: 9px !important;
+  border-radius: 12px !important;
+}
+
+.card .grid {
+  gap: 5px !important;
+  margin-top: 5px !important;
+}
+
+.categories-page .card > h2,
+.tx-page .card > h2,
+.budget-page .card > h2,
+.reports-page .card > h2,
+.dashboard-page .card > h2,
+.modal h2 {
+  font-size: clamp(0.92rem, 1.1vw, 1.12rem) !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.03em !important;
+  margin-bottom: 5px !important;
+}
+
+.reports-page .charts-grid h3,
+.reports-page .summary-grid .metric h3,
+#resumen .card h2,
+.salud-card h2 {
+  font-size: clamp(0.78rem, 0.95vw, 0.96rem) !important;
+  line-height: 1.04 !important;
+  margin-bottom: 3px !important;
+}
+
+label,
+small,
+.muted,
+tbody td,
+.toast,
+.badge {
+  line-height: 1.18 !important;
+}
+
+label {
+  font-size: 10px !important;
+  margin-bottom: 2px !important;
+}
+
+input,
+select,
+button.primary,
+button.secondary,
+button.google,
+.btn,
+.btn-icon {
+  min-height: 32px !important;
+}
+
+input,
+select {
+  padding: 5px 8px !important;
+  margin-bottom: 4px !important;
+  font-size: 0.8rem !important;
+  border-radius: 8px !important;
+}
+
+button.primary,
+button.secondary,
+button.google,
+.btn {
+  padding: 5px 8px !important;
+  margin-bottom: 5px !important;
+  font-size: 0.78rem !important;
+  border-radius: 8px !important;
+}
+
+.btn-icon {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.btn-icon svg {
+  width: 13px !important;
+  height: 13px !important;
+}
+
+thead th {
+  padding: 6px 7px !important;
+  font-size: 0.7rem !important;
+}
+
+tbody td {
+  padding: 5px 7px !important;
+  font-size: 0.78rem !important;
+}
+
+.dashboard-page #resumen {
+  gap: 5px !important;
+}
+
+#resumen .card {
+  padding: 8px !important;
+}
+
+#resumen .card strong,
+.reports-page .summary-grid .metric .value {
+  font-size: 0.88rem !important;
+}
+
+.salud-card {
+  padding: 8px !important;
+  gap: 3px !important;
+}
+
+.salud-bar {
+  height: 6px !important;
+}
+
+.salud-meta,
+.salud-list,
+.small {
+  font-size: 0.72rem !important;
+}
+
+.tx-form,
+.budget-form,
+.filters-card,
+#pdfArea {
+  padding: 8px !important;
+}
+
+.tx-form input,
+.tx-form select,
+.budget-form input,
+.budget-form select {
+  min-height: 32px !important;
+  font-size: 0.78rem !important;
+}
+
+.reports-page .layout,
+.reports-page .grid,
+.reports-page .summary-grid,
+.reports-page .charts-grid,
+.reports-page .toolbar,
+.reports-page .filters-card .toolbar {
+  gap: 6px !important;
+}
+
+.reports-page .summary-grid .metric,
+.reports-page .chart-card,
+.reports-page .charts-grid > div {
+  padding: 7px !important;
+}
+
+.reports-page .summary-grid .metric p,
+.reports-page .summary-grid .metric .label,
+.reports-page .summary-grid .metric .sub {
+  font-size: 0.68rem !important;
+}
+
+.reports-page .chart-card {
+  min-height: 190px !important;
+}
+
+.reports-page .chart-box {
+  height: 300px !important;
+}
+
+.modal {
+  padding: 9px !important;
+}
+
+.modal .actions {
+  margin-top: 6px !important;
 }

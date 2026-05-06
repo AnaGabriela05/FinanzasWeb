@@ -18,7 +18,7 @@
       <a class="active-link" href="/budgets.html">Presupuestos</a>
       <a href="/reports.html">Reportes</a>
 			<a href="/learning.html">Aprendizaje</a>
-      <button style="background:#64748B;color:#fff;padding:10px 14px;border-radius:10px;" onclick="logout()">Salir</button>
+      <button class="secondary nav-logout" onclick="logout()">Salir</button>
     </div>
   </header>
 
@@ -45,7 +45,6 @@
           </div>
         </div>
 
-        <br />
         <button type="button" class="primary" id="btnSave" onclick="guardar()">Guardar</button>
         <button type="button" class="secondary" id="btnClear" onclick="limpiar()">Limpiar</button>
         <div id="msg" class="toast"></div>
@@ -60,7 +59,6 @@
             <input id="fMes" type="number" min="1" max="12" />
             <input id="fAnio" type="number" min="2000" max="2100" />
           </div>
-          <br />
           <button type="button" class="secondary" onclick="cargar()">Buscar</button>
 
         </div>
