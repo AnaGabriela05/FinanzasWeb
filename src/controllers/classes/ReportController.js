@@ -7,6 +7,12 @@ class ReportController extends BaseController {
 
     this.transactionsExport = this.transactionsExport.bind(this);
     this.insights = this.insights.bind(this);
+    this.overview = this.overview.bind(this);
+    this.listExports = this.listExports.bind(this);
+  }
+
+  listExports(req, res) {
+    return this.execute(res, () => this.reportService.listExports(req.user, req.query));
   }
 
   async transactionsExport(req, res) {
@@ -22,6 +28,10 @@ class ReportController extends BaseController {
 
   insights(req, res) {
     return this.execute(res, () => this.reportService.getInsights(req.user, req.query));
+  }
+
+  overview(req, res) {
+    return this.execute(res, () => this.reportService.getOverview(req.user, req.query));
   }
 }
 
