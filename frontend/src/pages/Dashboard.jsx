@@ -1,226 +1,115 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
+import ModuleHeader from '../components/layout/ModuleHeader'
 import { Auth } from '../lib/auth'
-import { API } from '../lib/api'
+import { ReportService } from '../services/reportService'
+import { MetricCardSkeleton, HealthCardSkeleton } from '../components/Skeleton'
+import { useToast } from '../components/Toast'
+import { formatPEN } from '../lib/currency'
+import AdviceModal from '../components/advice/AdviceModal'
+import LevelBadge from '../components/quiz/LevelBadge'
+import { QuizService } from '../services/quizService'
+import { usePreviewMode } from '../hooks/usePreviewMode'
 
-function formatMoney(value) {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0
-  }).format(Number(value || 0))
+const ADVICE_CTA_BY_LEVEL = {
+  danger:  '💡 Ver consejos personalizados',
+  warning: '💡 Ver consejos personalizados',
+  success: '💡 Consejos para mantener tu salud',
+  neutral: '💡 Cómo empezar a controlar tus finanzas'
 }
+
+const formatMoney = formatPEN
 
 function formatPercent(value) {
   if (value === null || value === undefined || Number.isNaN(value)) {
     return '—'
   }
-
   return `${(Number(value) * 100).toFixed(0)}%`
-}
-
-function daysAgo(days = 90) {
-  const date = new Date()
-  date.setDate(date.getDate() - days)
-  return date.toISOString().slice(0, 10)
-}
-
-function isDebtCategory(name = '') {
-  return /deuda|cr[eé]dito|tarjeta|pr[eé]stamo|cuota/i.test(name)
-}
-
-function scoreSavingRate(rate) {
-  if (rate > 0.2) return 100
-  if (rate >= 0.1) return 70
-  if (rate >= 0) return 40
-  return 10
-}
-
-function scoreExpenseRatio(rate) {
-  if (rate < 0.8) return 100
-  if (rate <= 0.95) return 70
-  return 40
-}
-
-function scoreBudgetHit(rate) {
-  if (rate <= 0) return 100
-  if (rate <= 0.1) return 70
-  return 40
-}
-
-function scoreDebtLoad(rate) {
-  if (rate < 0.1) return 100
-  if (rate <= 0.25) return 70
-  return 40
-}
-
-function getHealthLevel(score, saldo, gastos, ingresos) {
-  if (gastos > ingresos || saldo < 0 || score < 50) {
-    return {
-      key: 'danger',
-      label: 'Rojo',
-      title: 'Atencion inmediata',
-      description: 'Tus gastos estan superando lo saludable para tu nivel de ingresos.'
-    }
-  }
-
-  if (score < 75 || gastos >= ingresos * 0.9) {
-    return {
-      key: 'warning',
-      label: 'Amarillo',
-      title: 'Zona de cuidado',
-      description: 'Tus gastos estan cerca de tus ingresos. Conviene vigilar el margen.'
-    }
-  }
-
-  return {
-    key: 'success',
-    label: 'Verde',
-    title: 'Buen equilibrio',
-    description: 'Tus ingresos sostienen bien tus gastos y mantienes saldo positivo.'
-  }
-}
-
-function buildFinancialHealth(transactions, budgets, summary) {
-  const ingresos = Number(summary.ingresos || 0)
-  const gastos = Number(summary.gastos || 0)
-  const saldo = Number(summary.saldo || 0)
-
-  const gastosDeuda = transactions
-    .filter((tx) => tx.category?.tipo === 'gasto' && isDebtCategory(tx.category?.nombre || ''))
-    .reduce((total, tx) => total + Number(tx.monto || 0), 0)
-
-  const savingRate = ingresos > 0 ? saldo / ingresos : 0
-  const expenseRatio = ingresos > 0 ? gastos / ingresos : 1
-  const debtLoad = ingresos > 0 ? gastosDeuda / ingresos : 0
-
-  const now = new Date()
-  const currentMonth = now.getMonth() + 1
-  const currentYear = now.getFullYear()
-  const activeBudgets = budgets.filter(
-    (budget) => Number(budget.mes) === currentMonth && Number(budget.anio) === currentYear
-  )
-
-  let budgetOvershootRel = null
-
-  if (activeBudgets.length > 0) {
-    let sumBudget = 0
-    let sumSpent = 0
-
-    for (const budget of activeBudgets) {
-      sumBudget += Number(budget.montoMensual || 0)
-      const categoryId = budget.category?.id ?? budget.categoryId
-      const spentByCategory = transactions
-        .filter((tx) => tx.category?.id === categoryId && tx.category?.tipo === 'gasto')
-        .reduce((total, tx) => total + Number(tx.monto || 0), 0)
-
-      sumSpent += spentByCategory
-    }
-
-    const extra = Math.max(0, sumSpent - sumBudget)
-    budgetOvershootRel = sumBudget > 0 ? extra / sumBudget : 0
-  }
-
-  const score1 = scoreSavingRate(savingRate)
-  const score2 = scoreExpenseRatio(expenseRatio)
-  const score3 = budgetOvershootRel === null ? 70 : scoreBudgetHit(budgetOvershootRel)
-  const score4 = scoreDebtLoad(debtLoad)
-
-  const score = Math.round(score1 * 0.4 + score2 * 0.3 + score3 * 0.2 + score4 * 0.1)
-  const level = getHealthLevel(score, saldo, gastos, ingresos)
-
-  return {
-    score,
-    level,
-    metrics: {
-      savingRate,
-      expenseRatio,
-      budgetOvershootRel,
-      debtLoad
-    }
-  }
 }
 
 export default function Dashboard() {
   const user = Auth.user()
-  const [dashboard, setDashboard] = useState(null)
+  const navigate = useNavigate()
+  const toast = useToast()
+  const isPreview = usePreviewMode()
+  const [overview, setOverview] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [adviceOpen, setAdviceOpen] = useState(false)
+  const [quizProgress, setQuizProgress] = useState(null)
 
   useEffect(() => {
+    if (isPreview) return undefined
     let cancelled = false
+    QuizService.getProgress()
+      .then((data) => { if (!cancelled) setQuizProgress(data) })
+      .catch(() => { /* opcional, no bloquea el dashboard */ })
+    return () => { cancelled = true }
+  }, [isPreview])
 
-    async function loadDashboard() {
-      setLoading(true)
-      setError('')
-
-      try {
-        const from = daysAgo(90)
-        const to = new Date().toISOString().slice(0, 10)
-
-        const [insights, categories, paymentMethods, transactions90, budgets] =
-          await Promise.all([
-            API.get('/api/reports/insights'),
-            API.get('/api/categories'),
-            API.get('/api/payment-methods'),
-            API.get(`/api/transactions?from=${from}&to=${to}`),
-            API.get('/api/budgets')
-          ])
-
-        const summary = {
-          ingresos: Number(insights?.totals?.ingresos || 0),
-          gastos: Number(insights?.totals?.gastos || 0),
-          saldo: Number(insights?.totals?.saldo || 0),
-          categoriesCount: Array.isArray(categories) ? categories.length : 0,
-          paymentMethodsCount: Array.isArray(paymentMethods) ? paymentMethods.length : 0
-        }
-
-        const health = buildFinancialHealth(transactions90, budgets, summary)
-
-        if (!cancelled) {
-          setDashboard({
-            summary,
-            health,
-            transactionCount: Number(insights?.count || 0),
-            analysisRange: { from, to }
-          })
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err.message || 'No se pudo cargar el dashboard')
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      }
+  useEffect(() => {
+    if (isPreview) {
+      setLoading(false)
+      setOverview(null)
+      return undefined
     }
 
-    loadDashboard()
+    let cancelled = false
+
+    setLoading(true)
+    setError('')
+
+    ReportService.getOverview()
+      .then((data) => {
+        if (!cancelled) setOverview(data)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        const message = err.message || 'No se pudo cargar el dashboard'
+        setError(message)
+        toast.error(message)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
 
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [toast, isPreview])
 
   return (
     <Layout>
-      <section className="dashboard-header">
-        <div>
-          <span className="dashboard-header__eyebrow">Resumen general</span>
-          <h1>Hola, {user.nombre || user.correo || 'usuario'}.</h1>
-          <p>
-            Este panel usa la API real del backend para resumir tu actividad
-            financiera y mostrar tu estado actual.
+      <ModuleHeader
+        title={`Hola, ${user.nombre || user.correo || 'usuario'}`}
+        subtitle={`Resumen de tus finanzas en los últimos ${overview?.analysisRange?.days ?? 90} días`}
+        primaryAction={{
+          label: 'Nueva transacción',
+          icon: '+',
+          disabled: isPreview,
+          onClick: () => navigate(isPreview ? '/admin/preview/transactions' : '/transactions?nueva=1'),
+          title: isPreview ? 'No disponible en modo vista previa' : undefined
+        }}
+      />
+
+      {isPreview ? (
+        <section className="bg-white border border-slate-200 rounded-xl p-6 text-center mb-4">
+          <p className="text-slate-600 m-0">
+            Estado inicial vacío. Así verá esta pantalla un usuario recién registrado.
           </p>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {loading ? (
-        <section className="dashboard-state">
-          <div className="dashboard-loader" />
-          <p>Cargando datos del dashboard...</p>
-        </section>
+        <>
+          <section className="metrics-grid">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <MetricCardSkeleton key={index} />
+            ))}
+          </section>
+          <HealthCardSkeleton />
+        </>
       ) : null}
 
       {!loading && error ? (
@@ -230,59 +119,63 @@ export default function Dashboard() {
         </section>
       ) : null}
 
-      {!loading && !error && dashboard ? (
+      {!loading && !error && overview ? (
         <>
           <section className="metrics-grid">
             <article className="metric-card metric-card--income">
               <span className="metric-card__label">Ingresos</span>
-              <strong>{formatMoney(dashboard.summary.ingresos)}</strong>
-              <p>Total calculado con datos reales del reporte.</p>
+              <strong>{formatMoney(overview.summary.ingresos)}</strong>
+              <p>Total del periodo analizado.</p>
             </article>
 
             <article className="metric-card metric-card--expense">
               <span className="metric-card__label">Gastos</span>
-              <strong>{formatMoney(dashboard.summary.gastos)}</strong>
-              <p>Suma de movimientos asociados a categorias de gasto.</p>
+              <strong>{formatMoney(overview.summary.gastos)}</strong>
+              <p>Suma de movimientos en categorias de gasto.</p>
             </article>
 
             <article className="metric-card metric-card--balance">
               <span className="metric-card__label">Saldo</span>
-              <strong>{formatMoney(dashboard.summary.saldo)}</strong>
-              <p>Diferencia entre ingresos y gastos actuales.</p>
+              <strong>{formatMoney(overview.summary.saldo)}</strong>
+              <p>Diferencia entre ingresos y gastos del periodo.</p>
             </article>
 
             <article className="metric-card">
               <span className="metric-card__label">Categorias</span>
-              <strong>{dashboard.summary.categoriesCount}</strong>
-              <p>Categorias visibles obtenidas desde la API real.</p>
+              <strong>{overview.summary.categoriesCount}</strong>
+              <p>Categorias visibles para tu sesion.</p>
             </article>
 
             <article className="metric-card">
               <span className="metric-card__label">Metodos de pago</span>
-              <strong>{dashboard.summary.paymentMethodsCount}</strong>
-              <p>Metodos activos listados para tu cuenta.</p>
+              <strong>{overview.summary.paymentMethodsCount}</strong>
+              <p>Metodos activos asociados a tu cuenta.</p>
             </article>
 
             <article className="metric-card">
               <span className="metric-card__label">Movimientos analizados</span>
-              <strong>{dashboard.transactionCount}</strong>
-              <p>Transacciones consideradas por el resumen del dashboard.</p>
+              <strong>{overview.transactionCount}</strong>
+              <p>Transacciones consideradas en el periodo.</p>
             </article>
           </section>
 
-          <section className={`health-card health-card--${dashboard.health.level.key}`}>
+          <section className={`health-card health-card--${overview.health.level.key}`}>
             <div className="health-card__main">
               <div>
                 <span className="health-card__eyebrow">Salud financiera</span>
-                <h2>{dashboard.health.level.title}</h2>
-                <p>{dashboard.health.level.description}</p>
+                <h2>{overview.health.level.title}</h2>
+                <p>{overview.health.level.description}</p>
               </div>
 
               <div className="health-score">
                 <span className="health-score__light" aria-hidden="true" />
                 <div>
-                  <strong>{dashboard.health.level.label}</strong>
-                  <span>{dashboard.health.score}/100</span>
+                  <strong>{overview.health.level.label}</strong>
+                  <span>
+                    {overview.health.score !== null && overview.health.score !== undefined
+                      ? `${overview.health.score}/100`
+                      : '—'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -290,40 +183,84 @@ export default function Dashboard() {
             <div className="health-meter">
               <div
                 className="health-meter__fill"
-                style={{ width: `${dashboard.health.score}%` }}
+                style={{ width: `${overview.health.score ?? 0}%` }}
               />
             </div>
 
             <div className="health-metrics">
               <article>
                 <span>Tasa de ahorro</span>
-                <strong>{formatPercent(dashboard.health.metrics.savingRate)}</strong>
+                <strong>{formatPercent(overview.health.metrics.savingRate)}</strong>
               </article>
               <article>
                 <span>Gastos / ingresos</span>
-                <strong>{formatPercent(dashboard.health.metrics.expenseRatio)}</strong>
+                <strong>
+                  {overview.health.metrics.expenseRatio === null
+                    ? 'Sin ingresos'
+                    : formatPercent(overview.health.metrics.expenseRatio)}
+                </strong>
               </article>
               <article>
                 <span>Desfase vs presupuesto</span>
                 <strong>
-                  {dashboard.health.metrics.budgetOvershootRel === null
+                  {overview.health.metrics.budgetOvershootRel === null
                     ? '— sin presupuestos'
-                    : `+${formatPercent(dashboard.health.metrics.budgetOvershootRel)}`}
+                    : `+${formatPercent(overview.health.metrics.budgetOvershootRel)}`}
                 </strong>
               </article>
               <article>
                 <span>Carga de deuda</span>
-                <strong>{formatPercent(dashboard.health.metrics.debtLoad)}</strong>
+                <strong>
+                  {overview.health.metrics.debtLoad === null
+                    ? 'Sin ingresos'
+                    : formatPercent(overview.health.metrics.debtLoad)}
+                </strong>
               </article>
             </div>
 
             <p className="health-note">
-              Analisis financiero basado en transacciones reales de los ultimos 90 dias
-              ({dashboard.analysisRange.from} a {dashboard.analysisRange.to}).
+              Analisis de los ultimos {overview.analysisRange.days} dias
+              ({overview.analysisRange.from} a {overview.analysisRange.to}).
             </p>
+
+            <div style={{ marginTop: 14 }}>
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={() => setAdviceOpen(true)}
+              >
+                {ADVICE_CTA_BY_LEVEL[overview.health.level.key] || ADVICE_CTA_BY_LEVEL.neutral}
+              </button>
+            </div>
           </section>
         </>
       ) : null}
+
+      {!loading && !error && quizProgress?.nivel ? (
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+          <div className="flex-1 min-w-0">
+            <span className="text-xs uppercase tracking-wide text-slate-500 font-medium">
+              Mi progreso de aprendizaje
+            </span>
+            <div className="mt-2">
+              <LevelBadge
+                nivel={quizProgress.nivel}
+                siguienteNivel={quizProgress.siguienteNivel}
+                totalPoints={quizProgress.totalPoints || 0}
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            className="button-primary self-start md:self-center"
+            onClick={() => navigate('/learning?tab=progress')}
+          >
+            Ver mi progreso →
+          </button>
+        </section>
+      ) : null}
+
+      <AdviceModal open={adviceOpen} onClose={() => setAdviceOpen(false)} />
     </Layout>
   )
 }

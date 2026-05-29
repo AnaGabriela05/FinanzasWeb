@@ -1,19 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Layout from '../components/Layout'
+import ModuleHeader from '../components/layout/ModuleHeader'
 import { ReportService } from '../services/reportService'
 import ReportBreakdownCard from '../components/report/ReportBreakdownCard'
 import ReportFiltersPanel from '../components/report/ReportFiltersPanel'
 import ReportKpiGrid from '../components/report/ReportKpiGrid'
 import ReportVisualPanel from '../components/report/ReportVisualPanel'
 import { Link } from 'react-router-dom'
-
-function formatMoney(value) {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0
-  }).format(Number(value || 0))
-}
+import Skeleton, { TableSkeleton } from '../components/Skeleton'
+import { useToast } from '../components/Toast'
+import { formatPEN as formatMoney } from '../lib/currency'
+import { usePreviewMode } from '../hooks/usePreviewMode'
 
 function formatDate(value) {
   if (!value) return '-'
@@ -227,6 +224,8 @@ function getExpensePressure(summary) {
 }
 
 export default function Reports() {
+  const toast = useToast()
+  const isPreview = usePreviewMode()
   const [categories, setCategories] = useState([])
   const [paymentMethods, setPaymentMethods] = useState([])
   const [draftFilters, setDraftFilters] = useState(getDefaultFilters)
@@ -235,6 +234,17 @@ export default function Reports() {
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState('')
   const [error, setError] = useState('')
+  const filtersRef = useRef(null)
+
+  const rangoLabel = useMemo(() => {
+    const from = appliedFilters.from || '—'
+    const to = appliedFilters.to || '—'
+    return `${from} → ${to}`
+  }, [appliedFilters.from, appliedFilters.to])
+
+  function scrollToFilters() {
+    filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -257,12 +267,18 @@ export default function Reports() {
       }
     }
 
-    loadOptions()
+    if (!isPreview) {
+      loadOptions()
+    } else {
+      // En preview, dejamos filtros vacios para no llamar a /api/categories y demas.
+      setCategories([])
+      setPaymentMethods([])
+    }
 
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [isPreview])
 
   useEffect(() => {
     let cancelled = false
@@ -270,6 +286,12 @@ export default function Reports() {
     async function loadReport() {
       setLoading(true)
       setError('')
+
+      if (isPreview) {
+        setReportData({ insights: { totals: { ingresos: 0, gastos: 0, saldo: 0 } }, transactions: [] })
+        setLoading(false)
+        return
+      }
 
       try {
         const backendFilters = {
@@ -308,7 +330,7 @@ export default function Reports() {
     return () => {
       cancelled = true
     }
-  }, [appliedFilters])
+  }, [appliedFilters, isPreview])
 
   const filteredTransactions = useMemo(() => {
     const source = reportData?.transactions || []
@@ -389,12 +411,12 @@ export default function Reports() {
 
   async function handleExport(format) {
     setExporting(format)
-    setError('')
 
     try {
       await ReportService.downloadExport(appliedFilters, format)
+      toast.success(`Reporte ${format.toUpperCase()} descargado`)
     } catch (err) {
-      setError(err.message || 'No se pudo exportar el reporte')
+      toast.error(err.message || 'No se pudo exportar el reporte')
     } finally {
       setExporting('')
     }
@@ -402,22 +424,26 @@ export default function Reports() {
 
   return (
     <Layout>
-      <section className="module-header report-header">
-        <div>
-          <span className="module-header__eyebrow">Analisis</span>
-          <h1>Reportes de transacciones</h1>
-          <p>
-            Tablero ejecutivo para leer tu actividad financiera con filtros reales,
-            KPIs, distribuciones y exportacion lista para compartir.
-          </p>
-        </div>
-      </section>
+      <ModuleHeader
+        subtitle="Filtra, analiza y exporta tu actividad financiera"
+        badges={[{ label: 'Rango', value: rangoLabel, variant: 'info' }]}
+        secondaryActions={[
+          { label: 'Filtros', icon: '⚙', onClick: scrollToFilters }
+        ]}
+        primaryAction={{
+          label: exporting === 'pdf' ? 'Exportando…' : 'Exportar',
+          icon: '📥',
+          disabled: !!exporting || isPreview,
+          title: isPreview ? 'No disponible en modo vista previa' : undefined,
+          onClick: () => handleExport('pdf')
+        }}
+      />
 
       {error ? (
         <section className="module-feedback module-feedback--error">{error}</section>
       ) : null}
 
-      <section className="reports-layout">
+      <section className="reports-layout" ref={filtersRef}>
         <ReportFiltersPanel
           categories={categories}
           paymentMethods={paymentMethods}
@@ -433,9 +459,18 @@ export default function Reports() {
 
         <div className="report-panel">
           {loading ? (
-            <section className="dashboard-state">
-              <div className="dashboard-loader" />
-              <p>Cargando analisis financiero...</p>
+            <section className="report-skeleton">
+              <Skeleton width="100%" height={120} radius={16} />
+              <div className="report-skeleton__row">
+                <Skeleton width="100%" height={140} radius={16} />
+                <Skeleton width="100%" height={140} radius={16} />
+                <Skeleton width="100%" height={140} radius={16} />
+                <Skeleton width="100%" height={140} radius={16} />
+              </div>
+              <div className="report-skeleton__row">
+                <TableSkeleton rows={5} columns={3} />
+                <TableSkeleton rows={5} columns={3} />
+              </div>
             </section>
           ) : reportData ? (
             <>

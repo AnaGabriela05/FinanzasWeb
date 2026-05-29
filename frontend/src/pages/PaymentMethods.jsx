@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Layout from '../components/Layout'
+import ModuleHeader from '../components/layout/ModuleHeader'
 import ConfirmModal from '../components/ConfirmModal'
 import DependencyActionModal from '../components/DependencyActionModal'
+import { TableSkeleton } from '../components/Skeleton'
+import { useToast } from '../components/Toast'
 import { PaymentMethodsService } from '../services/paymentMethods'
+import { usePreviewMode } from '../hooks/usePreviewMode'
 
 const emptyForm = {
   nombre: '',
@@ -10,14 +14,26 @@ const emptyForm = {
 }
 
 export default function PaymentMethods() {
+  const toast = useToast()
+  const isPreview = usePreviewMode()
   const [paymentMethods, setPaymentMethods] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [feedback, setFeedback] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [modalState, setModalState] = useState({ type: null, payload: null, loading: false })
+  const formRef = useRef(null)
+
+  const activosCount = useMemo(
+    () => paymentMethods.filter((m) => m.activo !== false).length,
+    [paymentMethods]
+  )
+
+  function startNewMethod() {
+    resetForm()
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     loadPaymentMethods()
@@ -26,6 +42,12 @@ export default function PaymentMethods() {
   async function loadPaymentMethods() {
     setLoading(true)
     setError('')
+
+    if (isPreview) {
+      setPaymentMethods([])
+      setLoading(false)
+      return
+    }
 
     try {
       const data = await PaymentMethodsService.list()
@@ -50,11 +72,7 @@ export default function PaymentMethods() {
     setModalState({ type: null, payload: null, loading: false })
   }
 
-  function showFeedback(type, message) {
-    setFeedback({ type, message })
-  }
-
-  function handleSubmit(event) {
+function handleSubmit(event) {
     event.preventDefault()
     setModalState({
       type: 'save',
@@ -72,7 +90,6 @@ export default function PaymentMethods() {
     setModalState((current) => ({ ...current, loading: true }))
     setSaving(true)
     setError('')
-    setFeedback(null)
 
     const payload = {
       nombre: form.nombre.trim(),
@@ -86,17 +103,17 @@ export default function PaymentMethods() {
 
       if (editingId) {
         await PaymentMethodsService.update(editingId, payload)
-        showFeedback('success', 'Metodo de pago actualizado correctamente')
+        toast.success('Metodo de pago actualizado correctamente')
       } else {
         await PaymentMethodsService.create({ nombre: payload.nombre })
-        showFeedback('success', 'Metodo de pago creado correctamente')
+        toast.success('Metodo de pago creado correctamente')
       }
 
       resetForm()
       closeModal()
       await loadPaymentMethods()
     } catch (err) {
-      showFeedback('error', err.message || 'No se pudo guardar el metodo de pago')
+      toast.error(err.message || 'No se pudo guardar el metodo de pago')
       closeModal()
     } finally {
       setSaving(false)
@@ -109,11 +126,9 @@ export default function PaymentMethods() {
       nombre: paymentMethod.nombre || '',
       activo: paymentMethod.activo !== false
     })
-    setFeedback(null)
   }
 
   async function handleDelete(paymentMethod) {
-    setFeedback(null)
     setError('')
 
     try {
@@ -135,7 +150,7 @@ export default function PaymentMethods() {
         loading: false
       })
     } catch (err) {
-      showFeedback('error', err.message || 'No se pudo eliminar el metodo de pago')
+      toast.error(err.message || 'No se pudo eliminar el metodo de pago')
     }
   }
 
@@ -147,7 +162,7 @@ export default function PaymentMethods() {
 
     try {
       await PaymentMethodsService.remove(paymentMethod.id)
-      showFeedback('success', 'Metodo de pago eliminado correctamente')
+      toast.success('Metodo de pago eliminado correctamente')
 
       if (editingId === paymentMethod.id) {
         resetForm()
@@ -156,7 +171,7 @@ export default function PaymentMethods() {
       closeModal()
       await loadPaymentMethods()
     } catch (err) {
-      showFeedback('error', err.message || 'No se pudo eliminar el metodo de pago')
+      toast.error(err.message || 'No se pudo eliminar el metodo de pago')
       closeModal()
     }
   }
@@ -184,7 +199,7 @@ export default function PaymentMethods() {
       closeModal()
       await loadPaymentMethods()
     } catch (err) {
-      showFeedback('error', err.message || 'No se pudo procesar el metodo de pago')
+      toast.error(err.message || 'No se pudo procesar el metodo de pago')
       closeModal()
     }
   }
@@ -192,22 +207,19 @@ export default function PaymentMethods() {
   return (
     <>
       <Layout>
-        <section className="module-header">
-          <div>
-            <span className="module-header__eyebrow">Modulo</span>
-            <h1>Metodos de pago</h1>
-            <p>
-              Gestiona tus metodos de pago con la API real del proyecto. Desde aqui
-              puedes listar, crear, editar y eliminar.
-            </p>
-          </div>
-        </section>
-
-        {feedback ? (
-          <section className={`module-feedback module-feedback--${feedback.type}`}>
-            {feedback.message}
-          </section>
-        ) : null}
+        <ModuleHeader
+          subtitle="Define los métodos de pago que usas con frecuencia"
+          badges={[
+            { label: 'Activos', value: String(activosCount), variant: 'success' }
+          ]}
+          primaryAction={{
+            label: 'Nuevo método',
+            icon: '+',
+            onClick: startNewMethod,
+            disabled: isPreview,
+            title: isPreview ? 'No disponible en modo vista previa' : undefined
+          }}
+        />
 
         {error ? (
           <section className="module-feedback module-feedback--error">
@@ -216,7 +228,7 @@ export default function PaymentMethods() {
         ) : null}
 
         <section className="module-grid">
-          <article className="module-card">
+          <article className="module-card" ref={formRef}>
             <div className="module-card__header">
               <h2>{editingId ? 'Editar metodo de pago' : 'Nuevo metodo de pago'}</h2>
               <p>
@@ -278,10 +290,7 @@ export default function PaymentMethods() {
             </div>
 
             {loading ? (
-              <div className="table-state">
-                <div className="dashboard-loader" />
-                <p>Cargando metodos de pago...</p>
-              </div>
+              <TableSkeleton rows={4} columns={3} />
             ) : paymentMethods.length === 0 ? (
               <div className="table-state">
                 <p>No hay metodos de pago disponibles todavia.</p>

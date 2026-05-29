@@ -129,17 +129,6 @@ export default function ReportVisualPanel({
 }) {
   return (
     <section className="report-hero">
-      <div className="report-hero__header">
-        <div>
-          <span className="report-hero__eyebrow">Cuadro de mando</span>
-          <h2>Panel visual del reporte</h2>
-          <p>
-            Vista ejecutiva del periodo seleccionado con foco en tendencias, volumen y
-            distribucion del gasto.
-          </p>
-        </div>
-      </div>
-
       <div className="report-hero__summary">
         <TrendCard label={trend.label} value={trend.value} help={trend.help} />
         <MiniStat

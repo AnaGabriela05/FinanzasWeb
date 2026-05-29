@@ -22,6 +22,10 @@ function getFilenameFromDisposition(header, fallback) {
 }
 
 export const ReportService = {
+  getOverview() {
+    return API.get('/api/reports/overview')
+  },
+
   getInsights(filters = {}) {
     return API.get(`/api/reports/insights${buildQuery(filters)}`)
   },

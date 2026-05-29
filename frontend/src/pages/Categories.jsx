@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Layout from '../components/Layout'
+import ModuleHeader from '../components/layout/ModuleHeader'
 import { Auth } from '../lib/auth'
 import ConfirmModal from '../components/ConfirmModal'
 import DependencyActionModal from '../components/DependencyActionModal'
+import { TableSkeleton } from '../components/Skeleton'
+import { useToast } from '../components/Toast'
 import { CategoriesService } from '../services/categories'
+import { usePreviewMode } from '../hooks/usePreviewMode'
 
 const emptyForm = {
   nombre: '',
@@ -14,14 +18,31 @@ const emptyForm = {
 export default function Categories() {
   const user = Auth.user()
   const isAdmin = user.role === 'admin'
+  const isPreview = usePreviewMode()
+  const toast = useToast()
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [feedback, setFeedback] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [modalState, setModalState] = useState({ type: null, payload: null, loading: false })
+  const formRef = useRef(null)
+
+  const { personalesCount, globalesCount } = useMemo(() => {
+    let personales = 0
+    let globales = 0
+    for (const c of categories) {
+      if (c.global) globales += 1
+      else personales += 1
+    }
+    return { personalesCount: personales, globalesCount: globales }
+  }, [categories])
+
+  function startNewCategory() {
+    resetForm()
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     loadCategories()
@@ -54,11 +75,7 @@ export default function Categories() {
     setModalState({ type: null, payload: null, loading: false })
   }
 
-  function showFeedback(type, message) {
-    setFeedback({ type, message })
-  }
-
-  function handleSubmit(event) {
+function handleSubmit(event) {
     event.preventDefault()
     setModalState({
       type: 'save',
@@ -76,7 +93,6 @@ export default function Categories() {
     setModalState((current) => ({ ...current, loading: true }))
     setSaving(true)
     setError('')
-    setFeedback(null)
 
     const payload = {
       nombre: form.nombre.trim(),
@@ -91,17 +107,17 @@ export default function Categories() {
 
       if (editingId) {
         await CategoriesService.update(editingId, payload)
-        showFeedback('success', 'Categoria actualizada correctamente')
+        toast.success('Categoria actualizada correctamente')
       } else {
         await CategoriesService.create(payload)
-        showFeedback('success', 'Categoria creada correctamente')
+        toast.success('Categoria creada correctamente')
       }
 
       resetForm()
       closeModal()
       await loadCategories()
     } catch (err) {
-      showFeedback('error', err.message || 'No se pudo guardar la categoria')
+      toast.error(err.message || 'No se pudo guardar la categoria')
       closeModal()
     } finally {
       setSaving(false)
@@ -115,11 +131,9 @@ export default function Categories() {
       tipo: category.tipo || 'gasto',
       global: Boolean(category.global)
     })
-    setFeedback(null)
   }
 
   async function handleDelete(category) {
-    setFeedback(null)
     setError('')
 
     try {
@@ -141,7 +155,7 @@ export default function Categories() {
         loading: false
       })
     } catch (err) {
-      showFeedback('error', err.message || 'No se pudo eliminar la categoria')
+      toast.error(err.message || 'No se pudo eliminar la categoria')
     }
   }
 
@@ -153,7 +167,7 @@ export default function Categories() {
 
     try {
       await CategoriesService.remove(category.id)
-      showFeedback('success', 'Categoria eliminada correctamente')
+      toast.success('Categoria eliminada correctamente')
 
       if (editingId === category.id) {
         resetForm()
@@ -162,7 +176,7 @@ export default function Categories() {
       closeModal()
       await loadCategories()
     } catch (err) {
-      showFeedback('error', err.message || 'No se pudo eliminar la categoria')
+      toast.error(err.message || 'No se pudo eliminar la categoria')
       closeModal()
     }
   }
@@ -190,7 +204,7 @@ export default function Categories() {
       closeModal()
       await loadCategories()
     } catch (err) {
-      showFeedback('error', err.message || 'No se pudo procesar la categoria')
+      toast.error(err.message || 'No se pudo procesar la categoria')
       closeModal()
     }
   }
@@ -198,22 +212,20 @@ export default function Categories() {
   return (
     <>
       <Layout>
-        <section className="module-header">
-          <div>
-            <span className="module-header__eyebrow">Modulo</span>
-            <h1>Categorias</h1>
-            <p>
-              Administra tus categorias usando el backend real del proyecto. Desde
-              aqui puedes listar, crear, editar y eliminar.
-            </p>
-          </div>
-        </section>
-
-        {feedback ? (
-          <section className={`module-feedback module-feedback--${feedback.type}`}>
-            {feedback.message}
-          </section>
-        ) : null}
+        <ModuleHeader
+          subtitle="Organiza tus ingresos y gastos por categoría"
+          badges={[
+            { label: 'Personales', value: String(personalesCount), variant: 'default' },
+            { label: 'Globales', value: String(globalesCount), variant: 'info' }
+          ]}
+          primaryAction={{
+            label: 'Nueva categoría',
+            icon: '+',
+            onClick: startNewCategory,
+            disabled: isPreview,
+            title: isPreview ? 'No disponible en modo vista previa' : undefined
+          }}
+        />
 
         {error ? (
           <section className="module-feedback module-feedback--error">
@@ -222,7 +234,7 @@ export default function Categories() {
         ) : null}
 
         <section className="module-grid">
-          <article className="module-card">
+          <article className="module-card" ref={formRef}>
             <div className="module-card__header">
               <h2>{editingId ? 'Editar categoria' : 'Nueva categoria'}</h2>
               <p>
@@ -294,10 +306,7 @@ export default function Categories() {
             </div>
 
             {loading ? (
-              <div className="table-state">
-                <div className="dashboard-loader" />
-                <p>Cargando categorias...</p>
-              </div>
+              <TableSkeleton rows={5} columns={4} />
             ) : categories.length === 0 ? (
               <div className="table-state">
                 <p>No hay categorias disponibles todavia.</p>

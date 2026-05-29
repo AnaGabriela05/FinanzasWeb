@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Layout from '../components/Layout'
+import ModuleHeader from '../components/layout/ModuleHeader'
 import ConfirmModal from '../components/ConfirmModal'
+import { TableSkeleton } from '../components/Skeleton'
+import { useToast } from '../components/Toast'
 import { BudgetsService } from '../services/budgets'
+import { formatPEN as formatMoney } from '../lib/currency'
+import { usePreviewMode } from '../hooks/usePreviewMode'
 
 function currentMonth() {
   return String(new Date().getMonth() + 1)
@@ -9,14 +14,6 @@ function currentMonth() {
 
 function currentYear() {
   return String(new Date().getFullYear())
-}
-
-function formatMoney(value) {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0
-  }).format(Number(value || 0))
 }
 
 const emptyForm = {
@@ -32,16 +29,29 @@ const emptyFilters = {
 }
 
 export default function Budgets() {
+  const toast = useToast()
+  const isPreview = usePreviewMode()
   const [budgets, setBudgets] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [feedback, setFeedback] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [filters, setFilters] = useState(emptyFilters)
   const [editingId, setEditingId] = useState(null)
   const [modalState, setModalState] = useState({ type: null, payload: null, loading: false })
+  const formRef = useRef(null)
+
+  const activosCount = budgets.length
+  const alLimiteCount = useMemo(
+    () => budgets.filter((b) => b.alLimite || b.estado === 'limite').length,
+    [budgets]
+  )
+
+  function startNewBudget() {
+    resetForm()
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     loadInitialData()
@@ -50,6 +60,13 @@ export default function Budgets() {
   async function loadInitialData() {
     setLoading(true)
     setError('')
+
+    if (isPreview) {
+      setBudgets([])
+      setCategories([])
+      setLoading(false)
+      return
+    }
 
     try {
       const [budgetsData, categoriesData] = await Promise.all([
@@ -88,11 +105,7 @@ export default function Budgets() {
     setModalState({ type: null, payload: null, loading: false })
   }
 
-  function showFeedback(type, message) {
-    setFeedback({ type, message })
-  }
-
-  function handleSubmit(event) {
+function handleSubmit(event) {
     event.preventDefault()
     setModalState({
       type: 'save',
@@ -110,7 +123,6 @@ export default function Budgets() {
     setModalState((current) => ({ ...current, loading: true }))
     setSaving(true)
     setError('')
-    setFeedback(null)
 
     const payload = {
       categoryId: Number(form.categoryId),
@@ -130,17 +142,17 @@ export default function Budgets() {
 
       if (editingId) {
         await BudgetsService.update(editingId, payload)
-        showFeedback('success', 'Presupuesto actualizado correctamente')
+        toast.success('Presupuesto actualizado correctamente')
       } else {
         await BudgetsService.create(payload)
-        showFeedback('success', 'Presupuesto guardado correctamente')
+        toast.success('Presupuesto guardado correctamente')
       }
 
       resetForm()
       closeModal()
       await refreshBudgets()
     } catch (err) {
-      showFeedback('error', err.message || 'No se pudo guardar el presupuesto')
+      toast.error(err.message || 'No se pudo guardar el presupuesto')
       closeModal()
     } finally {
       setSaving(false)
@@ -155,11 +167,9 @@ export default function Budgets() {
       mes: String(budget.mes || ''),
       anio: String(budget.anio || '')
     })
-    setFeedback(null)
   }
 
   function handleDelete(budget) {
-    setFeedback(null)
     setError('')
     setModalState({
       type: 'delete',
@@ -176,7 +186,7 @@ export default function Budgets() {
 
     try {
       await BudgetsService.remove(budget.id)
-      showFeedback('success', 'Presupuesto eliminado correctamente')
+      toast.success('Presupuesto eliminado correctamente')
 
       if (editingId === budget.id) {
         resetForm()
@@ -185,7 +195,7 @@ export default function Budgets() {
       closeModal()
       await refreshBudgets()
     } catch (err) {
-      showFeedback('error', err.message || 'No se pudo eliminar el presupuesto')
+      toast.error(err.message || 'No se pudo eliminar el presupuesto')
       closeModal()
     }
   }
@@ -193,7 +203,6 @@ export default function Budgets() {
   async function handleFilterSubmit(event) {
     event.preventDefault()
     setError('')
-    setFeedback(null)
 
     try {
       setLoading(true)
@@ -208,7 +217,6 @@ export default function Budgets() {
   async function clearFilters() {
     setFilters(emptyFilters)
     setError('')
-    setFeedback(null)
 
     try {
       setLoading(true)
@@ -224,22 +232,22 @@ export default function Budgets() {
   return (
     <>
       <Layout>
-        <section className="module-header">
-          <div>
-            <span className="module-header__eyebrow">Modulo</span>
-            <h1>Presupuestos</h1>
-            <p>
-              Administra tus presupuestos mensuales con categorias reales cargadas
-              desde la API del proyecto.
-            </p>
-          </div>
-        </section>
-
-        {feedback ? (
-          <section className={`module-feedback module-feedback--${feedback.type}`}>
-            {feedback.message}
-          </section>
-        ) : null}
+        <ModuleHeader
+          subtitle="Define un límite mensual de gasto por categoría"
+          badges={[
+            { label: 'Activos', value: String(activosCount), variant: 'default' },
+            ...(alLimiteCount > 0
+              ? [{ label: 'Al límite', value: String(alLimiteCount), icon: '⚠️', variant: 'warning' }]
+              : [])
+          ]}
+          primaryAction={{
+            label: 'Asignar presupuesto',
+            icon: '+',
+            onClick: startNewBudget,
+            disabled: isPreview,
+            title: isPreview ? 'No disponible en modo vista previa' : undefined
+          }}
+        />
 
         {error ? (
           <section className="module-feedback module-feedback--error">
@@ -248,7 +256,7 @@ export default function Budgets() {
         ) : null}
 
         <section className="module-grid module-grid--wide">
-          <article className="module-card">
+          <article className="module-card" ref={formRef}>
             <div className="module-card__header">
               <h2>{editingId ? 'Editar presupuesto' : 'Asignar presupuesto'}</h2>
               <p>
@@ -379,10 +387,7 @@ export default function Budgets() {
             </form>
 
             {loading ? (
-              <div className="table-state">
-                <div className="dashboard-loader" />
-                <p>Cargando presupuestos...</p>
-              </div>
+              <TableSkeleton rows={5} columns={4} />
             ) : budgets.length === 0 ? (
               <div className="table-state">
                 <p>No hay presupuestos registrados todavia.</p>
