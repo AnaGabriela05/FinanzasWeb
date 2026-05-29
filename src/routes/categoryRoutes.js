@@ -1,23 +1,35 @@
 const express = require('express');
 const auth = require('../middlewares/auth');
+const { denyRole } = require('../middlewares/requireRole');
+const validateRequest = require('../middlewares/validateRequest');
 const controller = require('../controllers/categoryController');
+const {
+  createCategoryValidator,
+  updateCategoryValidator,
+  removeCategoryValidator,
+  usageCategoryValidator,
+  listCategoryValidator,
+  categoryIdParamValidator
+} = require('../validators/categoryValidators');
 
 const router = express.Router();
 
 router.use(auth);
-router.post('/', controller.create);
-router.get('/', controller.list);
+
+// El admin gestiona categorias globales en /api/admin/categories.
+// Aqui (CRUD de usuario final) se le bloquean POST/PUT/DELETE.
+// La LECTURA del catalogo queda abierta para que el modo "Vista como usuario" funcione.
+const blockAdminWrite = denyRole('admin');
+
+router.post('/', blockAdminWrite, createCategoryValidator, validateRequest, controller.create);
+router.get('/', listCategoryValidator, validateRequest, controller.list);
 router.get('/listadoTotal', controller.listadoTotal);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
+router.put('/:id', blockAdminWrite, updateCategoryValidator, validateRequest, controller.update);
+router.delete('/:id', blockAdminWrite, removeCategoryValidator, validateRequest, controller.remove);
 
-// Restaurar visibilidad de una global oculta para el usuario
-router.post('/:id/restore', controller.restore);
+router.post('/:id/restore', blockAdminWrite, categoryIdParamValidator, validateRequest, controller.restore);
 
-// Uso/estadísticas (para el modal de confirmación)
-// Por defecto scope=mine; admin puede usar ?scope=all en categorías globales
-router.get('/:id/usage', controller.usage);
-// Alias opcional por compatibilidad con front antiguo:
-router.get('/:id/stats', controller.usage);
+router.get('/:id/usage', usageCategoryValidator, validateRequest, controller.usage);
+router.get('/:id/stats', usageCategoryValidator, validateRequest, controller.usage);
 
 module.exports = router;

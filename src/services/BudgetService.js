@@ -9,15 +9,11 @@ class BudgetService {
   async upsert(user, payload) {
     const input = {
       userId: user.id,
-      categoryId: Number(payload.categoryId),
-      montoMensual: Number(payload.montoMensual),
-      mes: Number(payload.mes),
-      anio: Number(payload.anio)
+      categoryId: payload.categoryId,
+      montoMensual: payload.montoMensual,
+      mes: payload.mes,
+      anio: payload.anio
     };
-
-    if (!input.categoryId || Number.isNaN(input.montoMensual) || !input.mes || !input.anio) {
-      throw new HttpError(400, 'Datos invalidos (categoryId, montoMensual, mes, anio)');
-    }
 
     await this.ensureVisibleCategory(user.id, input.categoryId);
 
@@ -63,7 +59,7 @@ class BudgetService {
     const nextCategoryId = payload.categoryId ?? budget.categoryId;
     const nextMes = payload.mes ?? budget.mes;
     const nextAnio = payload.anio ?? budget.anio;
-    const nextMonto = payload.montoMensual != null ? Number(payload.montoMensual) : budget.montoMensual;
+    const nextMonto = payload.montoMensual ?? budget.montoMensual;
 
     await this.ensureVisibleCategory(user.id, nextCategoryId);
 

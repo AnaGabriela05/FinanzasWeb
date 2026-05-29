@@ -7,13 +7,8 @@ class PaymentMethodService {
   }
 
   async create(user, payload) {
-    const nombre = String(payload.nombre || '').trim();
-    if (!nombre) {
-      throw new HttpError(400, 'Nombre requerido');
-    }
-
     const paymentMethod = await this.paymentMethodRepository.create({
-      nombre,
+      nombre: payload.nombre,
       activo: true,
       userId: user.id
     });
@@ -45,12 +40,8 @@ class PaymentMethodService {
     }
 
     const patch = {};
-    if (payload.nombre !== undefined) {
-      patch.nombre = String(payload.nombre || '').trim();
-    }
-    if (payload.activo !== undefined) {
-      patch.activo = !!payload.activo;
-    }
+    if (payload.nombre !== undefined) patch.nombre = payload.nombre;
+    if (payload.activo !== undefined) patch.activo = payload.activo;
 
     await this.paymentMethodRepository.update(paymentMethod, patch);
     return { message: 'Metodo editado correctamente', data: paymentMethod, updated: true };
