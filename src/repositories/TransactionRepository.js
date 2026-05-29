@@ -9,7 +9,7 @@ class TransactionRepository {
     return Transaction.findOne({ where: { id, userId } });
   }
 
-  findByFilters({ where, categoryWhere, order = [['fecha', 'DESC']] }) {
+  findByFilters({ where, categoryWhere, order = [['fecha', 'DESC'], ['id', 'DESC']] }) {
     const categoryInclude = { model: Category, as: 'category' };
 
     if (categoryWhere) {
@@ -20,6 +20,27 @@ class TransactionRepository {
     return Transaction.findAll({
       where,
       order,
+      include: [
+        categoryInclude,
+        { model: PaymentMethod, as: 'paymentMethod' }
+      ]
+    });
+  }
+
+  findAndCountByFilters({ where, categoryWhere, order = [['fecha', 'DESC'], ['id', 'DESC']], limit, offset }) {
+    const categoryInclude = { model: Category, as: 'category' };
+
+    if (categoryWhere) {
+      categoryInclude.where = categoryWhere;
+      categoryInclude.required = true;
+    }
+
+    return Transaction.findAndCountAll({
+      where,
+      order,
+      limit,
+      offset,
+      distinct: true,
       include: [
         categoryInclude,
         { model: PaymentMethod, as: 'paymentMethod' }

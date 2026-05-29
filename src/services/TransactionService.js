@@ -14,6 +14,7 @@ class TransactionService {
     const transaction = await this.transactionRepository.create({
       fecha: payload.fecha,
       monto: payload.monto,
+      currency: payload.currency || 'PEN',
       descripcion: payload.descripcion,
       categoryId: payload.categoryId,
       paymentMethodId: payload.paymentMethodId,
@@ -26,22 +27,38 @@ class TransactionService {
     };
   }
 
-  list(user, query) {
+  async list(user, query) {
     const where = { userId: user.id };
 
-    if (query.categoryId) {
-      where.categoryId = query.categoryId;
-    }
-    if (query.paymentMethodId) {
-      where.paymentMethodId = query.paymentMethodId;
-    }
-    if (query.from && query.to) {
-      where.fecha = { [Op.between]: [query.from, query.to] };
-    }
+    if (query.categoryId) where.categoryId = query.categoryId;
+    if (query.paymentMethodId) where.paymentMethodId = query.paymentMethodId;
+    if (query.from && query.to) where.fecha = { [Op.between]: [query.from, query.to] };
 
     const categoryWhere = query.transactionType ? { tipo: query.transactionType } : null;
 
-    return this.transactionRepository.findByFilters({ where, categoryWhere });
+    const isPaginated = query.page !== undefined || query.limit !== undefined;
+    if (!isPaginated) {
+      return this.transactionRepository.findByFilters({ where, categoryWhere });
+    }
+
+    const limit = query.limit || 50;
+    const page = query.page || 1;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await this.transactionRepository.findAndCountByFilters({
+      where,
+      categoryWhere,
+      limit,
+      offset
+    });
+
+    return {
+      items: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.max(Math.ceil(count / limit), 1)
+    };
   }
 
   async update(user, id, payload) {
@@ -61,6 +78,7 @@ class TransactionService {
     await this.transactionRepository.update(transaction, {
       fecha: payload.fecha ?? transaction.fecha,
       monto: payload.monto != null ? payload.monto : transaction.monto,
+      currency: payload.currency ?? transaction.currency,
       descripcion: payload.descripcion != null ? payload.descripcion : transaction.descripcion,
       categoryId: payload.categoryId ?? transaction.categoryId,
       paymentMethodId: payload.paymentMethodId ?? transaction.paymentMethodId
