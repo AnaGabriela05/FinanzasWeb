@@ -9,6 +9,11 @@ const PaymentMethod   = require('./paymentMethod');
 const Transaction     = require('./transaction');
 const Budget          = require('./budget');
 const UserCategoryHide= require('./userCategoryHide');
+const ExportLog       = require('./exportLog');
+const ConsejoIa       = require('./ConsejoIa');
+const QuizQuestion    = require('./QuizQuestion');
+const QuizAttempt     = require('./QuizAttempt');
+const QuizAnswer      = require('./QuizAnswer');
 
 // Instancia del modelo LearningState (factory)
 const LearningState   = require('./LearningState')(sequelize, DataTypes); // ← OK
@@ -41,9 +46,30 @@ Budget.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 UserCategoryHide.belongsTo(User,    { foreignKey: 'userId',    as: 'user' });
 UserCategoryHide.belongsTo(Category,{ foreignKey: 'categoryId',as: 'category' });
 
-// Exporta también LearningState
+User.hasMany(ExportLog, { foreignKey: 'userId', as: 'exportLogs' });
+ExportLog.belongsTo(User,           { foreignKey: 'userId',           as: 'user' });
+ExportLog.belongsTo(Category,       { foreignKey: 'categoryId',       as: 'category' });
+ExportLog.belongsTo(PaymentMethod,  { foreignKey: 'paymentMethodId',  as: 'paymentMethod' });
+
+User.hasMany(ConsejoIa,   { foreignKey: 'userId', as: 'consejosIa' });
+ConsejoIa.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+User.hasMany(QuizAttempt,         { foreignKey: 'userId', as: 'quizAttempts' });
+QuizAttempt.belongsTo(User,       { foreignKey: 'userId', as: 'user' });
+
+QuizAttempt.hasMany(QuizAnswer,   { foreignKey: 'attemptId', as: 'answers', onDelete: 'CASCADE', hooks: true });
+QuizAnswer.belongsTo(QuizAttempt, { foreignKey: 'attemptId', as: 'attempt' });
+
+QuizQuestion.hasMany(QuizAnswer,  { foreignKey: 'questionId', as: 'answers' });
+QuizAnswer.belongsTo(QuizQuestion,{ foreignKey: 'questionId', as: 'question' });
+
 module.exports = {
   sequelize,
   Role, User, Category, PaymentMethod, Transaction, Budget, UserCategoryHide,
-  LearningState,                      // ← AQUI
+  LearningState,
+  ExportLog,
+  ConsejoIa,
+  QuizQuestion,
+  QuizAttempt,
+  QuizAnswer
 };

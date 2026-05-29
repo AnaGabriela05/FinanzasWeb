@@ -1,8 +1,6 @@
-// app.js
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
-const path = require('path');
 
 const authRoutes        = require('./routes/authRoutes');
 const categoryRoutes    = require('./routes/categoryRoutes');
@@ -11,19 +9,39 @@ const budgetRoutes      = require('./routes/budgetRoutes');
 const methodRoutes      = require('./routes/paymentMethodRoutes');
 const roleRoutes        = require('./routes/roleRoutes');
 const reportRoutes      = require('./routes/reportRoutes');
-const learningRoutes    = require('./routes/learningRoutes'); // ← CORRECTO
+const learningRoutes    = require('./routes/learningRoutes');
+const adviceRoutes      = require('./routes/adviceRoutes');
+const quizRoutes        = require('./routes/quizRoutes');
+const adminRoutes       = require('./routes/adminRoutes');
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) return callback(null, true); // permitir requests sin origin (curl, server-to-server)
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`Origen no permitido por CORS: ${origin}`));
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Frontend estático
-app.use(express.static(path.join(__dirname, '..', 'public')));
-
 // Health
 app.get('/api/health', (req, res) => res.json({ ok: true, service: 'finanzas' }));
+
+// Configuracion publica (tasa de cambio actual)
+const currencyConfig = require('./config/currency');
+app.get('/api/config/currency', (req, res) => res.json({
+  base: currencyConfig.BASE_CURRENCY,
+  supported: currencyConfig.SUPPORTED,
+  usdToPen: currencyConfig.usdToPen
+}));
 
 // API
 app.use('/api/auth', authRoutes);
@@ -33,11 +51,14 @@ app.use('/api/budgets', budgetRoutes);
 app.use('/api/payment-methods', methodRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/learning', learningRoutes);  // ← AQUI
+app.use('/api/learning', learningRoutes);
+app.use('/api/advice', adviceRoutes);
+app.use('/api/quiz', quizRoutes);
+app.use('/api/admin', adminRoutes);
 
-// Fallback
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+// 404 para cualquier ruta no /api/*
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
 // Error handler
