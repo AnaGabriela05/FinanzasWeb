@@ -1,11 +1,16 @@
 const express = require('express');
-const router  = express.Router();
-const auth    = require('../middlewares/auth');   // debe poner req.user.id
-const ctrl    = require('../controllers/learningController');
+const auth = require('../middlewares/auth');
+const { denyRole } = require('../middlewares/requireRole');
+const controller = require('../controllers/learningController');
 
-router.use(auth); // ← protege todo
+const router = express.Router();
 
-router.get('/:videoId/state', ctrl.getState);
-router.put('/:videoId/state', ctrl.saveState);
+router.use(auth);
+
+// Notas y checklist son datos personales del usuario.
+const blockAdmin = denyRole('admin');
+
+router.get('/:videoId/state', blockAdmin, controller.getState);
+router.put('/:videoId/state', blockAdmin, controller.saveState);
 
 module.exports = router;
