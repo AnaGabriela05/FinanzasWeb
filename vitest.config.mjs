@@ -5,6 +5,6 @@ export default {
   test: {
     environment: 'node',
     globals: true,
-    include: ['tests/unit/**/*.test.js']
+    include: ['tests/**/*.test.js']
   }
 };
