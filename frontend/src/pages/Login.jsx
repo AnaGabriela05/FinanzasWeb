@@ -1,14 +1,27 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { API } from '../lib/api'
 import { Auth } from '../lib/auth'
+import { useToast } from '../components/Toast'
 
 export default function Login() {
+  const toast = useToast()
   const [correo, setCorreo] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+  const noticeShownRef = useRef(false)
+
+  useEffect(() => {
+    if (location.state?.message && !noticeShownRef.current) {
+      toast.success(location.state.message)
+      noticeShownRef.current = true
+      // Limpia el state para que no reaparezca al volver atras
+      window.history.replaceState({}, '')
+    }
+  }, [location.state, toast])
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -18,7 +31,8 @@ export default function Login() {
     try {
       const response = await API.post('/api/auth/login', { correo, password })
       Auth.saveToken(response.token, response.user)
-      navigate('/dashboard', { replace: true })
+      const target = response.user?.role === 'admin' ? '/admin' : '/dashboard'
+      navigate(target, { replace: true })
     } catch (err) {
       setError(err.message || 'Error al iniciar sesion')
     } finally {
@@ -29,7 +43,7 @@ export default function Login() {
   return (
     <section className="auth-shell">
       <div className="auth-panel auth-panel--brand">
-        <span className="auth-kicker">Finanzas personales</span>
+        <span className="auth-kicker">AhorroGo</span>
         <h1>Ingresa y toma el control de tu dinero.</h1>
         
         <div className="auth-badges">
@@ -78,6 +92,10 @@ export default function Login() {
             <button className="auth-submit" type="submit" disabled={loading}>
               {loading ? 'Ingresando...' : 'Entrar'}
             </button>
+
+            <p className="auth-foot">
+              ¿No tienes cuenta? <Link to="/register">Crear una</Link>
+            </p>
           </form>
         </div>
       </div>
