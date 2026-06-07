@@ -238,7 +238,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  /* La separacion horizontal la controla Tailwind (gap-6) en el contenedor del nav. */
 }
 
 .topbar__nav-link,
@@ -1604,7 +1604,7 @@
     flex-basis: 100%;
     flex-direction: column;
     align-items: stretch;
-    gap: 6px;
+    /* En movil el gap lo controla Tailwind (max-[900px]:gap-3) en el contenedor. */
     overflow: hidden;
     max-height: 0;
     opacity: 0;

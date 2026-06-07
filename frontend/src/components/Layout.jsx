@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Auth } from '../lib/auth'
 import { usePreviewMode } from '../hooks/usePreviewMode'
 
@@ -47,10 +47,6 @@ export default function Layout({ children }) {
     navigate('/', { replace: true })
   }
 
-  function isActive(path) {
-    return location.pathname === path
-  }
-
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -80,19 +76,32 @@ export default function Layout({ children }) {
 
         <nav
           id="primary-nav"
-          className={`topbar__nav ${navOpen ? 'topbar__nav--open' : ''}`}
+          className={`topbar__nav flex items-center gap-6 max-[900px]:gap-3 ${navOpen ? 'topbar__nav--open' : ''}`}
           aria-label="Principal"
         >
           {NAV_LINKS.map((link) => (
-            <Link
+            <NavLink
               key={link.to}
               to={link.to}
-              className={isActive(link.matchPath) ? 'topbar__nav-link topbar__nav-link--active' : 'topbar__nav-link'}
+              end
+              className={({ isActive }) =>
+                isActive
+                  ? 'text-sm text-teal-700 font-medium border-b-2 border-teal-700 pb-1'
+                  : 'text-sm text-slate-600 hover:text-slate-900 border-b-2 border-transparent pb-1 transition-colors'
+              }
             >
               {link.label}
-            </Link>
+            </NavLink>
           ))}
-          <button type="button" className="topbar__nav-logout" onClick={handleLogout}>
+          <span
+            aria-hidden="true"
+            className="h-5 w-px bg-slate-200 self-center mx-1 max-[900px]:hidden"
+          />
+          <button
+            type="button"
+            className="text-sm text-red-600 hover:text-red-700 font-medium transition-colors ml-2 max-[900px]:ml-0"
+            onClick={handleLogout}
+          >
             {isPreview ? 'Volver al panel' : 'Salir'}
           </button>
         </nav>

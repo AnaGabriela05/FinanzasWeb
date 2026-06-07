@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Auth } from '../lib/auth'
 
 const NAV_ITEMS = [
@@ -60,18 +60,18 @@ export default function AdminLayout() {
             {NAV_ITEMS.map((item) => {
               const active = isActive(item.to)
               return (
-                <Link
+                <NavLink
                   key={item.to}
                   to={item.to}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-2 text-sm border-b-2 pb-1 transition-colors ${
                     active
-                      ? 'bg-teal-50 text-teal-800 font-semibold'
-                      : 'text-slate-700 hover:bg-slate-50'
+                      ? 'text-teal-700 font-medium border-teal-700'
+                      : 'text-slate-600 hover:text-slate-900 border-transparent'
                   }`}
                 >
                   <span aria-hidden="true">{item.icon}</span>
                   <span>{item.label}</span>
-                </Link>
+                </NavLink>
               )
             })}
           </nav>
