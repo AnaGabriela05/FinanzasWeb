@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const logger = require('./config/logger');
 
 const authRoutes        = require('./routes/authRoutes');
 const categoryRoutes    = require('./routes/categoryRoutes');
@@ -30,7 +31,11 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use(morgan('dev'));
+// Log HTTP de acceso (morgan). Se omite en test para no ensuciar la salida de
+// vitest; el logger de aplicacion (winston) sigue siendo la pieza estructurada.
+if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan('dev'));
+}
 
 // Health
 app.get('/api/health', (req, res) => res.json({ ok: true, service: 'finanzas' }));
@@ -62,8 +67,15 @@ app.use((req, res) => {
 });
 
 // Error handler
-app.use((err, req, res, next) => {
-  console.error(err);
+// Loguea el error con stack (sin volcar req.body, que puede traer credenciales).
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+  logger.error('unhandled_error', {
+    message: err.message,
+    stack: err.stack,
+    method: req.method,
+    path: req.originalUrl,
+    status: err.status || 500
+  });
   res.status(err.status || 500).json({ error: err.message || 'Error interno' });
 });
 

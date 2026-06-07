@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const HttpError = require('../errors/HttpError');
+const { sanitizeText } = require('../utils/sanitize');
 
 class TransactionService {
   constructor({ transactionRepository, categoryRepository, paymentMethodRepository }) {
@@ -15,7 +16,7 @@ class TransactionService {
       fecha: payload.fecha,
       monto: payload.monto,
       currency: payload.currency || 'PEN',
-      descripcion: payload.descripcion,
+      descripcion: sanitizeText(payload.descripcion),
       categoryId: payload.categoryId,
       paymentMethodId: payload.paymentMethodId,
       userId: user.id
@@ -79,7 +80,7 @@ class TransactionService {
       fecha: payload.fecha ?? transaction.fecha,
       monto: payload.monto != null ? payload.monto : transaction.monto,
       currency: payload.currency ?? transaction.currency,
-      descripcion: payload.descripcion != null ? payload.descripcion : transaction.descripcion,
+      descripcion: payload.descripcion != null ? sanitizeText(payload.descripcion) : transaction.descripcion,
       categoryId: payload.categoryId ?? transaction.categoryId,
       paymentMethodId: payload.paymentMethodId ?? transaction.paymentMethodId
     });

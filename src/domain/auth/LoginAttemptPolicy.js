@@ -1,4 +1,5 @@
 const HttpError = require('../../errors/HttpError');
+const logger = require('../../config/logger');
 
 class LoginAttemptPolicy {
   constructor({ userRepository, maxAttempts, lockMinutes }) {
@@ -28,6 +29,12 @@ class LoginAttemptPolicy {
       user.lockUntil = new Date(Date.now() + this.lockMinutes * 60 * 1000);
       user.failedLoginAttempts = 0;
       await this.userRepository.save(user);
+      // Evento de seguridad: cuenta bloqueada por superar el umbral de intentos.
+      logger.warn('account_locked', {
+        userId: user.id,
+        lockMinutes: this.lockMinutes,
+        lockUntil: user.lockUntil
+      });
       throw new HttpError(
         423,
         `Cuenta bloqueada por ${this.lockMinutes} minutos por multiples intentos.`

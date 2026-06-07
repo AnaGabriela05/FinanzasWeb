@@ -1,6 +1,7 @@
 require('dotenv').config();
 const app = require('./src/app');
 const sequelize = require('./src/config/database');
+const logger = require('./src/config/logger');
 
 const PORT = process.env.PORT || 3000;
 
@@ -17,10 +18,10 @@ async function applyMigrations() {
     );
     for (const row of rows) {
       await sequelize.query(`DROP TABLE IF EXISTS \`${row.name}\``);
-      console.log(`[migrate] eliminada tabla huerfana ${row.name}`);
+      logger.info('migrate_drop_orphan_table', { table: row.name });
     }
   } catch (err) {
-    console.warn('[migrate] no se pudo inspeccionar tablas backup:', err.message);
+    logger.warn('migrate_inspect_backup_failed', { message: err.message });
   }
 
   // 2) Asegura columna currency en transactions (default PEN para filas existentes).
@@ -30,12 +31,12 @@ async function applyMigrations() {
       await sequelize.query(
         "ALTER TABLE transactions ADD COLUMN currency TEXT NOT NULL DEFAULT 'PEN'"
       );
-      console.log("[migrate] agregada columna 'currency' a transactions");
+      logger.info('migrate_add_currency_column', { table: 'transactions' });
     }
   } catch (err) {
     // Si la tabla aun no existe, sync() la crea con la columna correctamente.
     if (!/no such table/i.test(err.message)) {
-      console.warn('[migrate] error verificando columna currency:', err.message);
+      logger.warn('migrate_currency_check_failed', { message: err.message });
     }
   }
 }
@@ -50,9 +51,13 @@ async function start() {
     // Aplica migraciones manuales sobre tablas existentes.
     await applyMigrations();
 
-    app.listen(PORT, () => console.log(`API escuchando en http://localhost:${PORT}`));
+    app.listen(PORT, () => logger.info('server_started', {
+      port: PORT,
+      env: process.env.NODE_ENV || 'development',
+      url: `http://localhost:${PORT}`
+    }));
   } catch (err) {
-    console.error('Error al iniciar:', err);
+    logger.error('server_start_failed', { message: err.message, stack: err.stack });
     process.exit(1);
   }
 }

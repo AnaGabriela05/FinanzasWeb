@@ -1,4 +1,5 @@
 const HttpError = require('../errors/HttpError');
+const logger = require('../config/logger');
 
 class AdminService {
   constructor({ adminRepository, categoryRepository, categoryDependencyResolver, sequelize }) {
@@ -22,18 +23,21 @@ class AdminService {
     const mins = Math.max(1, Math.min(Number(minutos) || 10, 60 * 24 * 30));
     const user = await this.adminRepository.lockUser(Number(userId), mins);
     if (!user) throw new HttpError(404, 'Usuario no encontrado');
+    logger.info('admin_lock_user', { targetUserId: Number(userId), minutos: mins });
     return { ok: true, lockedUntil: user.lockUntil, minutos: mins };
   }
 
   async unlockUser(userId) {
     const user = await this.adminRepository.unlockUser(Number(userId));
     if (!user) throw new HttpError(404, 'Usuario no encontrado');
+    logger.info('admin_unlock_user', { targetUserId: Number(userId) });
     return { ok: true, unlocked: true };
   }
 
   async resetFailedAttempts(userId) {
     const user = await this.adminRepository.resetFailedAttempts(Number(userId));
     if (!user) throw new HttpError(404, 'Usuario no encontrado');
+    logger.info('admin_reset_failed_attempts', { targetUserId: Number(userId) });
     return { ok: true, failedLoginAttempts: 0 };
   }
 
@@ -50,6 +54,7 @@ class AdminService {
       userId: null,
       activo: true
     });
+    logger.info('admin_create_global_category', { categoryId: category.id, tipo });
     return { status: 201, body: { message: 'Categoria global creada', data: category } };
   }
 
@@ -63,6 +68,7 @@ class AdminService {
       tipo: payload.tipo ?? category.tipo,
       activo: payload.activo !== undefined ? !!payload.activo : category.activo
     });
+    logger.info('admin_update_global_category', { categoryId: category.id });
     return { message: 'Categoria global actualizada', data: category };
   }
 
@@ -71,6 +77,7 @@ class AdminService {
     if (!category) throw new HttpError(404, 'Categoria no encontrada');
     if (!category.global) throw new HttpError(400, 'No es una categoria global');
     await this.categoryRepository.update(category, { activo: false });
+    logger.info('admin_archive_global_category', { categoryId: category.id });
     return { ok: true, archived: true };
   }
 
@@ -97,6 +104,12 @@ class AdminService {
     }
 
     await this.categoryDependencyResolver.removeWithDependencies(category.id, usage.where, cascade);
+    logger.warn('admin_delete_global_category', {
+      categoryId: category.id,
+      cascade,
+      txDeleted: usage.txCount,
+      budgetsDeleted: usage.budgetCount
+    });
     return {
       ok: true,
       deleted: true,
