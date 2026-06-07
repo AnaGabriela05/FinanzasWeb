@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const currencyConfig = require('../../config/currency');
 
 // Pesos por defecto para el score (suma 1.0)
@@ -23,30 +24,27 @@ const DEBT_NAME_REGEX = /deuda|cr[eé]dito|tarjeta|pr[eé]stamo|cuota/i;
 
 class FinancialHealthAnalyzer {
   analyzeTransactions(transactions) {
-    let ingresos = 0;
-    let gastos = 0;
+    // Normaliza cada transaccion a la forma que necesitan las agregaciones
+    // (monto en moneda base, mes YYYY-MM, tipo y nombre de categoria).
+    const normalized = transactions.map((transaction) => ({
+      tipo: transaction.category?.tipo || '',
+      monto: montoEnPen(transaction),
+      ym: String(transaction.fecha).slice(0, 7),
+      categoryName: transaction.category?.nombre || '-'
+    }));
 
-    const incByMonth = new Map();
-    const expByMonth = new Map();
-    const expByCategory = new Map();
+    const ingresoRows = normalized.filter((row) => row.tipo === 'ingreso');
+    const gastoRows = normalized.filter((row) => row.tipo === 'gasto');
 
-    for (const transaction of transactions) {
-      const tipo = transaction.category?.tipo || '';
-      const monto = montoEnPen(transaction);
-      const ym = String(transaction.fecha).slice(0, 7);
+    const ingresos = _.sumBy(ingresoRows, 'monto');
+    const gastos = _.sumBy(gastoRows, 'monto');
 
-      if (tipo === 'ingreso') {
-        ingresos += monto;
-        incByMonth.set(ym, (incByMonth.get(ym) || 0) + monto);
-      } else if (tipo === 'gasto') {
-        gastos += monto;
-        expByMonth.set(ym, (expByMonth.get(ym) || 0) + monto);
-        const categoryName = transaction.category?.nombre || '-';
-        expByCategory.set(categoryName, (expByCategory.get(categoryName) || 0) + monto);
-      }
-    }
+    // Agrega por mes (ingresos/gastos) y por categoria (solo gastos) con lodash.
+    const incByMonth = _.mapValues(_.groupBy(ingresoRows, 'ym'), (rows) => _.sumBy(rows, 'monto'));
+    const expByMonth = _.mapValues(_.groupBy(gastoRows, 'ym'), (rows) => _.sumBy(rows, 'monto'));
+    const expByCategory = _.mapValues(_.groupBy(gastoRows, 'categoryName'), (rows) => _.sumBy(rows, 'monto'));
 
-    const labels = Array.from(new Set([...incByMonth.keys(), ...expByMonth.keys()])).sort();
+    const labels = _.orderBy(_.union(Object.keys(incByMonth), Object.keys(expByMonth)));
 
     return {
       totals: {
@@ -56,12 +54,12 @@ class FinancialHealthAnalyzer {
       },
       monthly: {
         labels,
-        income: labels.map((label) => incByMonth.get(label) || 0),
-        expense: labels.map((label) => expByMonth.get(label) || 0)
+        income: labels.map((label) => incByMonth[label] || 0),
+        expense: labels.map((label) => expByMonth[label] || 0)
       },
       categories: {
-        labels: Array.from(expByCategory.keys()),
-        expense: Array.from(expByCategory.values())
+        labels: Object.keys(expByCategory),
+        expense: Object.values(expByCategory)
       },
       count: transactions.length
     };
