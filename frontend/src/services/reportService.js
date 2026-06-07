@@ -9,6 +9,7 @@ function buildQuery(filters = {}) {
   if (filters.categoryId) params.set('categoryId', filters.categoryId)
   if (filters.paymentMethodId) params.set('paymentMethodId', filters.paymentMethodId)
   if (filters.transactionType) params.set('transactionType', filters.transactionType)
+  if (filters.format) params.set('format', filters.format)
 
   const query = params.toString()
   return query ? `?${query}` : ''
